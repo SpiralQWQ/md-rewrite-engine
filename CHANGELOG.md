@@ -6,6 +6,24 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.3-os] - 2026-09-20
+
+### Added
+
+- **First open-source release**: repository prepared from the internal
+  `md-rewrite-engine` codebase — full privacy sanitization (no internal paths /
+  project names / provider quirks), bilingual README & CHANGELOG (EN/zh),
+  AGPL-3.0 + commercial dual license, CONTRIBUTING / CODE_OF_CONDUCT /
+  SECURITY, roadmap, donate banners.
+- Test harness moved into the repo: `tests/exhaustive/s2_exhaustive.py`
+  (137 cases, fully mocked) alongside the 169 pytest unit tests.
+- `scripts/toc_gen.py` promoted from internal temp tooling.
+
+### Changed
+
+- docs/ curated: user-facing manuals kept at top level; internal planning and
+  acceptance reports archived under `docs/archive/`.
+
 ## [0.4.3] - 2026-08-23
 
 ### Fixed

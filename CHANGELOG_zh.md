@@ -5,6 +5,20 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.3-os] - 2026-09-20
+
+### Added
+
+- **首次开源发布**：由内部 `md-rewrite-engine` 代码库整理而来——全量隐私清洗
+  （内部路径/项目名/供应商细节零残留）、双语 README 与 CHANGELOG（英/中）、
+  AGPL-3.0 + 商用双许可、CONTRIBUTING / CODE_OF_CONDUCT / SECURITY、路线图、打赏码。
+- 测试资产入库：`tests/exhaustive/s2_exhaustive.py`（137 用例全 mock）+ 169 单元测试。
+- `scripts/toc_gen.py` 由内部 temp 工具转正。
+
+### Changed
+
+- docs/ 整理：用户向手册留在顶层；内部计划与验收报告归档至 `docs/archive/`。
+
 ## [0.4.3] - 2026-08-23
 
 ### Fixed
