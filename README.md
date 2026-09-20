@@ -122,12 +122,34 @@ python scripts/gate_check.py note.md --src source.md   # gate check (PASS/FAIL +
 | `docs/capability-functions.md` | capability function catalogue |
 | `docs/prompt-family-p1-p5.md` | P1–P5 prompt family |
 | `docs/directory-contract.md` | layering contract |
-| `docs/` | acceptance reports, plans, benchmarks (see `docs/archive/` for history) |
+| `docs/archive/` | acceptance reports, plans, benchmarks (history) |
 
 ## Roadmap
 
 See `ROADMAP.md`. Near term: diff-only gate review, executor auto-fallback,
 English note scaffold.
+
+## FAQ
+
+**Q: Do I have to use Claude in conversation for the rewrite step?**
+No — the scripts can drive any configured executor end-to-end (`cli.py input.md`).
+The relay mode is *recommended* because rewrite quality depends on holding the
+whole document in context, which is exactly what an in-conversation model is good
+at. The gate (`gate_check.py`) protects you either way.
+
+**Q: My gate check FAILs on ASR transcripts with weird numbers.**
+That's the mechanical reconciliation doing its job — but if the source text
+itself is noisy, check `--src` is the *cleaned* source. Number thresholds live in
+`configs/user_prefs.yaml`.
+
+**Q: Can I use a different LLM provider?**
+Yes: `glm`, `deepseek`, `anthropic` are wired; any OpenAI-compatible endpoint can
+be added in `providers/llm_client.py` `_ENDPOINTS`. Keys come from env vars only.
+
+**Q: Does it work on English source material?**
+The teaching scaffold ships Chinese-tuned (six-part sections, Feynman angles).
+The pipeline itself is language-agnostic; an English spec variant is on the
+[roadmap](ROADMAP.md).
 
 ## License
 

@@ -99,11 +99,25 @@ python scripts/gate_check.py 笔记.md --src 原文.md   # 门禁一键检查（
 | `docs/capability-functions.md` | 能力函数清单（脚本 = 工具库） |
 | `docs/prompt-family-p1-p5.md` | P1-P5 提示词家族（详细度/结构/检查写死） |
 | `docs/directory-contract.md` | 分层契约 |
-| `docs/archive/` | 历史版本存档 |
+| `docs/archive/` | 历史版本存档（施工清单/验收/评估报告） |
 
 ## 路线图
 
 见 `ROADMAP.md`（近期：diff-only 门禁审查、执行者自动降级、英文笔记模板）。
+
+## FAQ（常见问题）
+
+**问：重排环节必须在对话里用 Claude 吗？**
+不必——脚本可以端到端驱动任何已配置的执行者（`cli.py 输入.md`）。推荐"人机接力"是因为重排质量取决于"整篇都在上下文里"，这正是对话模型擅长的。无论哪种方式，门禁（`gate_check.py`）都兜底。
+
+**问：gate_check 对 ASR 转写总是 FAIL（数字对不上）？**
+那是机械对账在干活——但请先确认 `--src` 传入的是**清洗后**的原文；数字阈值在 `configs/user_prefs.yaml`。
+
+**问：能换别的 LLM 供应商吗？**
+可以：`glm` / `deepseek` / `anthropic` 已接好；任何 OpenAI 兼容 endpoint 都能在 `providers/llm_client.py` 的 `_ENDPOINTS` 里加。Key 只从环境变量读。
+
+**问：英文素材能用吗？**
+教学模板目前按中文调优（六件套/费曼角度）。流水线本身与语言无关；英文 spec 变体在[路线图](ROADMAP.md)上。
 
 ## 许可证
 
