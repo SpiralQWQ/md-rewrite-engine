@@ -1,0 +1,33 @@
+# executors.yaml · 4 环节执行者配置（v0.3.0 执行者选择器）
+# 执行者 executor 类型：
+#   - claude      # 本体对话（会话驱动，人工接力）→ provider 走 anthropic
+#   - glm         # 智谱 GLM 直连（glm-4.5-air 有额度）
+#   - deepseek    # DeepSeek 直连
+#   - anthropic   # Claude 官方通道（大上下文生成；未配置时走环境变量）
+# ⚠️ 实际 rewrite/reconcile 推荐由"本体对话"执行（人机接力），不走脚本全自动；
+#    anthropic 为【预留】备选——脚本全自动路径未充分验证，真用前需先测。
+# 每环节可指定 provider / model / key_env（留空则用对应默认）
+
+rewrite:
+  executor: claude        # 本体亲自重排（要上下文、要详细）
+  provider: ""
+  model: claude-sonnet-4-5  # Anthropic 通道的 Claude 模型名（按所用代理实际支持调整）
+  key_env: ""
+
+reconcile:
+  executor: claude        # 本体亲自对账（要理解内容才能查概念）
+  provider: ""
+  model: claude-sonnet-4-5
+  key_env: ""
+
+quality_check:
+  executor: glm           # GLM 质检（检查类，机器先挑，我再复核）
+  provider: glm
+  model: glm-4.5-air
+  key_env: GLM_API_KEY
+
+scoring:
+  executor: glm           # GLM 评分
+  provider: glm
+  model: glm-4.5-air
+  key_env: GLM_API_KEY

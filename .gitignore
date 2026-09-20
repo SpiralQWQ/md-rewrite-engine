@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# 密钥/配置（禁止入库）
+.env
+
+# 临时产物（测试样本保留，修复证据单忽略）
+temp/fixloop_evidence/
+
+# 编辑器/系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# pytest
+.pytest_cache/
+temp/

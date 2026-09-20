@@ -1,0 +1,16 @@
+# models · 模型档位（约束：不在乎 token，追求准确稳定）
+# 不在代码里硬编码模型名，一律从这里读（或环境变量覆盖）
+version: 1.3
+
+# 解析优先级：环境变量 MD_REWRITE_MODEL_<KEY> > executors.yaml（该环节 model）> 本文件 > 内置默认。
+# 执行者选择器（v0.3.0）优先：executors.yaml 里 rewrite/reconcile=本体(claude)、quality/scoring=glm，
+# 已显式指定 model 则走 executors.yaml；本文件是"未配置执行者时"的脚本侧默认（全走 GLM 直连，稳定能跑通）。
+# anthropic 通道代码保留在 llm_client.py（配置 ANTHROPIC_BASE_URL/AUTH_TOKEN 后可启用）。
+rewrite:      "glm-4.5-air"        # ① AI 滚动重排（主生成）
+quality_check: "glm-4.5-air"       # ②a 双模型质检（挑错，与生成分离）
+reconcile:    "glm-4.5-air"        # ②b 语义级对账（概念覆盖核对）
+scoring:      "glm-4.5-air"        # ②c 质量评分
+assemble:     ""                   # 语义分块/组装（规则为主，空=不调 LLM）
+
+# 降级（备用）
+fallback:     "glm-4-flash"

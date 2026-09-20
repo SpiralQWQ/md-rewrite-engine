@@ -1,0 +1,3 @@
+# md-rewrite-engine 依赖
+# LLM 调用走 urllib（标准库），仅 YAML 配置读取需第三方库
+PyYAML>=6.0          # configs/ 读取（models/note_style_spec/executors/user_prefs）

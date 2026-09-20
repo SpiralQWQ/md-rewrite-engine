@@ -1,0 +1,29 @@
+# user_prefs · 环节1 重排偏好（约束：不在乎 token，追求准确稳定）
+version: 1.0
+
+# 分块（防上下文超限 —— 物理上限，非省钱）
+chunk:
+  max_tokens: 4000        # 每块上限（AI 一次处理）
+  overlap_chars: 200      # 块间重叠（防切半句）
+
+# 滚动编译
+rolling:
+  enabled: true           # 滚动窗口（前文摘要贯穿）
+  summary_len: 500        # 每块摘要长度
+  compress_conservative: true  # 压缩保守化，少丢信息（不在乎 token）
+
+# 验证层
+verify:
+  double_model: true      # 双模型质检（生成与审查分离）
+  semantic_reconcile: true # 语义级对账（逐知识点核对）
+  score_threshold: 80     # 质量评分门槛（不过关打回）
+  low_conf_mark: true     # 低置信度标记 + 人工抽查
+  schema_check: true      # 结构化输出 schema 校验
+
+# 视觉信息（视频线 visual.txt）
+visual:
+  keep_full: true         # 保留逐帧 OCR/GLM 附录（不压缩，教学价值）
+
+# 费曼示范角度密度（v0.4.1 起；旧 10/8/6 题数已随"留白"定位废弃）
+feynman_density:
+  general: 2              # 一般知识点最小示范角度数（scripts/gate_check.py 读取此值）

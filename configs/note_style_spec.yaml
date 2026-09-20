@@ -1,0 +1,84 @@
+# note_style_spec · AI 友好 md 规范（从 transcription-tools/scripts/note_style_spec.md 继承 + OKF 全融合）
+# 版本 v1.3（v1.2 继承 + D 类内容结构补丁：互链规范 linking）
+
+# ── frontmatter 固定 8 字段（顺序固定）──
+frontmatter:
+  - title        # 标题
+  - source       # 来源（视频/文档）
+  - author       # 作者
+  - duration     # 时长/页数
+  - word_count   # 字数
+  - created      # 创建日期
+  - tags         # 标签（首个 = 来源类型）
+  - type         # 笔记类型（如 douyin-ai-teaching-note）
+# OKF 增强字段（v1.2 新增，逐步实施）
+okf_extra:
+  - confidence   # 置信度（high/medium/low）
+  - sources      # 溯源（来源+位置/时间戳）
+  - status       # 状态（draft/reviewed/final）
+  - wikilinks    # 交叉引用
+
+# ── 正文结构（7栏目 + 费曼）──
+structure:
+  - summary          # 一句话总结
+  - overview         # 📚 概述 / 学习目标 / 前置知识
+  - toc              # 📑 本篇目录（脚本后处理自动生成，AI 无需手写）
+  - key_points       # 🧠 核心知识点（每个含：定义/通俗类比/原理/示例/为什么重要/易错点）
+  - glossary         # 📖 专业词汇表（英文|中文|通俗解释|来源原句）
+  - feynman          # ❓ 费曼思考题（按重要程度配题）
+  - transcript       # 完整转写附录（AI 核对用）
+  - meta_footer      # 元信息尾部
+
+# ── 风格铁律 ──
+style_rules:
+  - "特别详细"
+  - "清晰有条理"
+  - "通俗易懂（类比）"
+  - "专业准确（保留中英术语）"
+  - "可教学"
+
+# ── AI 友好 4 要素（rewrite 强制产出标准，源自 OKFy/761 + synthadoc/001 + textbook-to-note/728 + VaultForge/668）──
+# ③ 完整信息密度：每个核心知识点必须完整展开以下子项，缺一不可
+info_density:
+  - definition        # 定义
+  - analogy           # 通俗类比
+  - principle         # 原理 / 细节
+  - example           # 示例（真实数据）
+  - why_important     # 为什么重要
+  - pitfalls          # 易错点 / 避坑
+# 费曼思考题：每个知识点的示范角度数（教学留白：给 AI 考察线索，AI 可自行展开，不写满教学稿）
+feynman_per_kp: 2-4
+# 附录：完整原文以"外置源数据"方式保留（OCR/GLM 全量不概括，见 write_output 源数据/）；
+#   正文不放完整转写附录（避免干扰教学），溯源查 源数据/。
+appendix: full_original_external
+# ────────────────────────────────────────────────
+# v0.4.0「知识库 + 教学留白」定位：不再强制每条内容标注正文来源。
+#   溯源改走「可选、外置」——需要溯源时查 `源数据/` 外置原文，正文不强标出处。
+#   （旧 `per_claim` 强制每条内容标来源，与"不强标出处"冲突，v0.4.0 起停用）
+confidence_levels: [high, medium, low]
+
+# ── 互链规范（D2，v1.3 新增）──
+# 前置知识/后继讲/相关知识点用 [[目标#锚点|显示文本]] 形式，AI 跨讲追引不靠猜
+linking:
+  syntax: "[[目标文件#锚点|显示文本]]"
+  prerequisites: "前置知识：指向定义该概念的前置讲次，如 [[01_第1讲.md#变量|变量]]"
+  next: "后继讲：指向下一讲次，如 [[02_第2讲.md]]"
+  related: "相关知识点：指向相关讲次，如 [[03_第3讲.md#循环|循环]]"
+  rules:
+    - "提到前置概念时必须加链接引用，不重写定义"
+    - "重复概念用链接引用而非重新展开"
+    - "链接目标必须在课程内存在；不确定目标时宁可不加也不造假链接"
+
+# ── 关联字段（D3，v1.3 新增）──
+# 教学依赖关系机器可读（AI 编程判断教学顺序；与 D2 互链同步，字段值 = [[链接]]目标）
+relation_fields:
+  - prerequisites   # 前置知识点：指向定义该概念的前置讲次，如 01_第1讲.md#变量
+  - next            # 后继讲：指向下一讲次，如 02_第2讲.md
+  - related         # 相关知识点：指向相关讲次，如 03_第3讲.md#循环
+
+# ── 置信度落值（D6，v1.3 新增）──
+# frontmatter confidence 必须实际填写（不再空字段），供 AI/人工抽查薄弱点
+confidence_policy:
+  levels: [high, medium, low]          # 三档置信度（okf-skills trust tier 参考）
+  verify_states: [unverified, machine_confirmed, human_reviewed]  # 核验状态
+  rule: "AI 按内容与转写吻合度自评 confidence；视频原句核对的标 verified: human_reviewed"
