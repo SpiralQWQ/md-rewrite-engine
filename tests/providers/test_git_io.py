@@ -9,8 +9,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from providers.git_io import commit_file, in_git_repo  # noqa: E402
-from services.orchestrator import build_course_index  # noqa: E402
+from md_rewrite_engine.providers.git_io import commit_file, in_git_repo  # noqa: E402
+from md_rewrite_engine.services.orchestrator import build_course_index  # noqa: E402
 
 
 def _git_available():

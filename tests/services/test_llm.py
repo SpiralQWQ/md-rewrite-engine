@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from services import llm  # noqa: E402
+from md_rewrite_engine.services import llm  # noqa: E402
 
 
 class TestLlm(unittest.TestCase):

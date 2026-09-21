@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.toc import build_toc, extract_headings, render_toc  # noqa: E402
+from md_rewrite_engine.core.toc import build_toc, extract_headings, render_toc  # noqa: E402
 
 
 class TestToc(unittest.TestCase):

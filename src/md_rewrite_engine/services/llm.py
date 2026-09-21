@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import re
 
-from providers.llm_client import call_llm  # noqa: WPS436 (服务域允许依赖 providers)
+from md_rewrite_engine.providers.llm_client import call_llm  # noqa: WPS436 (服务域允许依赖 providers)
 
 
 def _repair_json(text: str) -> str:

@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from services.orchestrator import build_course_index, validate_course_links  # noqa: E402
+from md_rewrite_engine.services.orchestrator import build_course_index, validate_course_links  # noqa: E402
 
 
 def _write(path, content):

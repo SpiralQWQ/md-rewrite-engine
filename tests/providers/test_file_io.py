@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from providers.file_io import read_md, scan_md_dir, write_md  # noqa: E402
+from md_rewrite_engine.providers.file_io import read_md, scan_md_dir, write_md  # noqa: E402
 
 
 class TestFileIO(unittest.TestCase):

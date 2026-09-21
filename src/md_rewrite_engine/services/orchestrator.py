@@ -16,17 +16,17 @@ import os
 import tempfile
 import time
 
-from core import assemble as A
-from core import chunk as CH
-from core import concepts as CN
-from core import md_index as MI
-from core import rewrite as RW
-from core import search as SR
-from core import toc as TOC
-from core import verify as V
-from providers import git_io as GIT
-from providers.file_io import read_md, scan_md_dir, write_md
-from services.llm import run_quality, run_reconcile, run_rewrite, run_scoring
+from md_rewrite_engine.core import assemble as A
+from md_rewrite_engine.core import chunk as CH
+from md_rewrite_engine.core import concepts as CN
+from md_rewrite_engine.core import md_index as MI
+from md_rewrite_engine.core import rewrite as RW
+from md_rewrite_engine.core import search as SR
+from md_rewrite_engine.core import toc as TOC
+from md_rewrite_engine.core import verify as V
+from md_rewrite_engine.providers import git_io as GIT
+from md_rewrite_engine.providers.file_io import read_md, scan_md_dir, write_md
+from md_rewrite_engine.services.llm import run_quality, run_reconcile, run_rewrite, run_scoring
 
 
 def _make_summarize_fn(glossary: str, spec: dict | None, call):
@@ -173,7 +173,7 @@ def process(md_path: str, output_path: str = "",
         - diff: 产出后 git diff --stat 摘要（C2 branch 模式；非 branch 为空串）
         - resumed: 是否命中断点续跑（B3：已完成直接返回缓存，跳过 LLM 重调）
     """
-    from providers.llm_client import call_llm  # noqa: WPS433 延迟导入避免循环
+    from md_rewrite_engine.providers.llm_client import call_llm  # noqa: WPS433 延迟导入避免循环
     call = _call or call_llm
     max_rewrite_retries = max(0, max_rewrite_retries)  # 负数 → 0（至少跑 1 轮验证，不静默跳过）
 

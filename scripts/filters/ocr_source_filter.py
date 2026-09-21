@@ -17,7 +17,7 @@
     python -m scripts.filters.ocr_source_filter --chapter 12 \
         --src temp/第12章_clean.md --out temp/第12章_clean_only.md
 
-零业务依赖：只依赖标准库（目录契约：scripts 层不 import core/services 业务逻辑，
+零业务依赖：只依赖标准库（目录契约：scripts 层不 import md_rewrite_engine.core/services 业务逻辑，
 本文件为独立工具，与 gate_check 同级使用）。
 """
 from __future__ import annotations

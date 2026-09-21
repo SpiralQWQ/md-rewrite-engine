@@ -7,8 +7,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.concepts import build_concept_page, extract_terms, find_context  # noqa: E402
-from services.orchestrator import build_concepts  # noqa: E402
+from md_rewrite_engine.core.concepts import build_concept_page, extract_terms, find_context  # noqa: E402
+from md_rewrite_engine.services.orchestrator import build_concepts  # noqa: E402
 
 
 def _write(path, content):

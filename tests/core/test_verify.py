@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.verify import (check, extract_keypoints, extract_links, find_missing_source,  # noqa: E402
+from md_rewrite_engine.core.verify import (check, extract_keypoints, extract_links, find_missing_source,  # noqa: E402
                          reconcile, score, validate_confidence, validate_frontmatter_schema,
                          validate_links, validate_relations)
 

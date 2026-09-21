@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.assemble import assemble, detect_heading  # noqa: E402
-from core.chunk import chunk_blocks  # noqa: E402
+from md_rewrite_engine.core.assemble import assemble, detect_heading  # noqa: E402
+from md_rewrite_engine.core.chunk import chunk_blocks  # noqa: E402
 
 
 class TestDetectHeading(unittest.TestCase):

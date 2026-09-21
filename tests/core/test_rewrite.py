@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.rewrite import rolling_compile  # noqa: E402
+from md_rewrite_engine.core.rewrite import rolling_compile  # noqa: E402
 
 
 def _fake(text, prev_summary):

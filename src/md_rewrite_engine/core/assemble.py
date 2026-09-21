@@ -1,6 +1,6 @@
 """core/assemble.py — 清洗后 md → 内部结构（标题树/面包屑）。
 
-纯算法、零外部依赖（目录契约铁律：core 不 import providers/services/configs）。
+纯算法、零外部依赖（目录契约铁律：core 不 import md_rewrite_engine.providers/services/configs）。
 把清洗后 md 解析成带层级的 Block 列表，每块带父标题面包屑，
 供下游 chunk（切块）和 rewrite（滚动编译）使用。
 

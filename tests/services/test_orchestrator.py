@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from services.orchestrator import process  # noqa: E402
+from md_rewrite_engine.services.orchestrator import process  # noqa: E402
 
 
 def _make_fake(flaky_quality=False):

@@ -1,6 +1,6 @@
 """core/md_index.py — 课程笔记 → 总索引 index.md 的纯算法（知识点地图）。
 
-纯函数、零外部依赖、零 IO（core 域铁律：不 import providers/services/configs）。
+纯函数、零外部依赖、零 IO（core 域铁律：不 import md_rewrite_engine.providers/services/configs）。
 文件扫描与写入归集成层（orchestrator/cli），本模块只做"文本 → 索引文本"。
 
 对应 D1：AI 看懂整门课的第一块拼图——先读 index.md 定位讲次与顺序，

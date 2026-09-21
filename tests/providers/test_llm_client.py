@@ -8,7 +8,7 @@ import urllib.error
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from providers import llm_client as lc  # noqa: E402
+from md_rewrite_engine.providers import llm_client as lc  # noqa: E402
 
 
 class _FakeResp:

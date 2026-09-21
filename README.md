@@ -61,13 +61,13 @@ pip install -r requirements.txt
 GLM_API_KEY=your-zhipu-key
 
 # 3. rewrite a cleaned markdown
-python cli.py input.md --output output.md
+python -m md_rewrite_engine input.md --output output.md
 
 # 4. course-level tools
-python cli.py --index course_dir            # build index.md
-python cli.py --validate-links course_dir   # find dangling [[links]]
-python cli.py --concepts course_dir         # build concept pages
-python cli.py --search keyword --input course_dir
+python -m md_rewrite_engine --index course_dir            # build index.md
+python -m md_rewrite_engine --validate-links course_dir   # find dangling [[links]]
+python -m md_rewrite_engine --concepts course_dir         # build concept pages
+python -m md_rewrite_engine --search keyword --input course_dir
 ```
 
 > **Recommended (human-in-the-loop)**: hand the transcript to your AI assistant in
@@ -92,9 +92,9 @@ Override per stage via `configs/executors.yaml` or env vars
 ## Architecture
 
 ```
-cli.py ──→ services ──→ core (pure algorithms)
-              │  ├─→ providers (LLM / file / git / executors)
-              └──→ configs (spec / prefs / models / executors)
+python -m md_rewrite_engine ──→ services ──→ core (pure algorithms)
+                                    │  ├─→ providers (LLM / file / git / executors)
+                                    └──→ configs (spec / prefs / models / executors)
 ```
 
 - **core/** — pure algorithms, zero external deps (assemble / chunk / rewrite /
@@ -110,7 +110,7 @@ Contract details: `docs/directory-contract.md`.
 ```bash
 python -m pytest tests/ -q          # 169 unit tests
 python tests/exhaustive/s2_exhaustive.py   # 137 exhaustive cases (fully mocked)
-python scripts/gate_check.py note.md --src source.md   # gate check (PASS/FAIL + defect list)
+python -m scripts.gate_check note.md --src source.md   # gate check (PASS/FAIL + defect list)
 ```
 
 ## Documentation
@@ -132,7 +132,7 @@ English note scaffold.
 ## FAQ
 
 **Q: Do I have to use Claude in conversation for the rewrite step?**
-No — the scripts can drive any configured executor end-to-end (`cli.py input.md`).
+No — the scripts can drive any configured executor end-to-end (`python -m md_rewrite_engine input.md`).
 The relay mode is *recommended* because rewrite quality depends on holding the
 whole document in context, which is exactly what an in-conversation model is good
 at. The gate (`gate_check.py`) protects you either way.

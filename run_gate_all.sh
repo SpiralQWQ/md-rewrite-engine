@@ -14,5 +14,5 @@ pairs=(
 for pair in "${pairs[@]}"; do
   note="${pair%%|*}"; src="${pair##*|}"
   echo "===== $note ====="
-  PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python scripts/gate_check.py "temp/$note" --src "temp/$src" 2>&1 | grep -E "整体|判定|机械对账|缺失|6 件套|❌ 缺失|无缺失" | head -5
+  PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python -m scripts.gate_check "temp/$note" --src "temp/$src" 2>&1 | grep -E "整体|判定|机械对账|缺失|6 件套|❌ 缺失|无缺失" | head -5
 done

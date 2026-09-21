@@ -24,9 +24,10 @@ import sys
 import yaml
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, ROOT)
 
-from core import verify as V  # noqa: E402
+from md_rewrite_engine.core import verify as V  # noqa: E402
 
 _SIX = ("定义", "类比", "原理", "示例", "为什么", "易错点")
 _DIGIT_THRESHOLD = 0.9        # 机械对账数字覆盖率门槛
@@ -137,7 +138,7 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
     report["feynman"] = fy
     # ④ GLM 评分（可选）
     if do_score:
-        from services.llm import run_scoring  # noqa: WPS433 延迟导入
+        from md_rewrite_engine.services.llm import run_scoring  # noqa: WPS433 延迟导入
         score = run_scoring(note)
         report["score"] = score
         score_ok = score >= _SCORE_PASS

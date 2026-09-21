@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from core.assemble import Block
+from md_rewrite_engine.core.assemble import Block
 
 # ── 默认参数（可由调用方覆盖；非魔法数字，是语义化默认值）──
 _MAX_CHARS_DEFAULT = 8000      # 每块最大字符（AI 一次处理窗口）

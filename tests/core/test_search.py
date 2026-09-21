@@ -7,8 +7,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from core.search import search, split_query  # noqa: E402
-from services.orchestrator import search_course  # noqa: E402
+from md_rewrite_engine.core.search import search, split_query  # noqa: E402
+from md_rewrite_engine.services.orchestrator import search_course  # noqa: E402
 
 
 def _write(path, content):

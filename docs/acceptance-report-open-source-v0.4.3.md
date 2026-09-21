@@ -27,7 +27,7 @@
 |---|---|---|---|
 | T1 | full privacy scan (7 patterns × all files) | 2 sh hard-coded paths, 3× internal project-name hits, 0 secrets | scan script itself excluded from results |
 | T2 | sanitize py/yaml/sh | sh `cd` → `$(dirname $0)`; all drive-path hits verified as URL false-positives | regex misfire pattern documented |
-| T3 | sanitize md | 3× internal project-name hits + 24× internal module name + 9× local proxy → 0 | archive handoff doc had 9 hidden hits |
+| T3 | sanitize md | 3× internal project name + 24× internal module name + 9× local provider quirks → 0 | archive handoff doc had 9 hidden hits |
 | T4 | README EN + zh | badges / language switch / Why / Features / Quick start / architecture / Roadmap / License / donate | structure aligned to sibling repos |
 | T5 | CHANGELOG EN + zh | all 6 versions translated; LICENSE/COMMERCIAL rebranded | caught LICENSE carrying sibling repo's name |
 | T6 | donate banners | assets/donate_{wechat,alipay}.jpg | — |

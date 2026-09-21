@@ -15,7 +15,7 @@ import json
 import os
 import sys
 
-from services.orchestrator import (build_concepts, build_course_index, process,  # noqa: E402
+from md_rewrite_engine.services.orchestrator import (build_concepts, build_course_index, process,  # noqa: E402
                                    search_course, validate_course_links)
 
 

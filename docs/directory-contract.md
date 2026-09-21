@@ -58,7 +58,8 @@ md-rewrite-engine/
 │   ├── file_io.py      #   读写 md / 扫描目录（原子写 + 写锁）
 │   ├── git_io.py       #   git 自动提交 / 分支 / diff（B1/C2）
 │   └── __init__.py
-├── cli.py              # 入口：薄层，只解析参数 → 调 orchestrator
+├── src/md_rewrite_engine/
+│   ├── __main__.py     # 入口：薄层，只解析参数 → 调 orchestrator（python -m md_rewrite_engine）
 ├── scripts/            # 构建/批量跑/门禁工具（gate_check.py：本体主控门禁一键检查）
 │   ├── gate_check.py   #   门禁：机械对账/6件套/费曼/评分判定（打回闭环，退出码 0/1）
 │   └── __init__.py
@@ -88,7 +89,7 @@ md-rewrite-engine/
 ## 5. 单向依赖铁律（防架构腐化）
 
 ```
-cli.py ──→ services ──→ core（纯算法）
+python -m md_rewrite_engine ──→ services ──→ core（纯算法）
               │  ├─→ providers（LLM/文件/git/执行者）
               └──→ configs（读配置）
 ```

@@ -20,7 +20,7 @@ pairs=(
 pass=0; fail=0
 for pair in "${pairs[@]}"; do
   note="${pair%%|*}"; src="${pair##*|}"
-  result=$(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python scripts/gate_check.py "temp/$note" --src "temp/$src" 2>&1 | grep "判定")
+  result=$(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python -m scripts.gate_check "temp/$note" --src "temp/$src" 2>&1 | grep "判定")
   if echo "$result" | grep -q "PASS"; then
     echo "✅ $note  $result"
     pass=$((pass+1))

@@ -43,13 +43,13 @@ pip install -r requirements.txt
 GLM_API_KEY=你的智谱key
 
 # 3. 重排一份清洗后 md
-python cli.py 输入.md --output 输出.md
+python -m md_rewrite_engine 输入.md --output 输出.md
 
 # 4. 课程级工具
-python cli.py --index 课程目录           # 生成 index.md 总索引
-python cli.py --validate-links 课程目录  # 校验 [[链接]] 悬空
-python cli.py --concepts 课程目录        # 生成概念页
-python cli.py --search 关键词 --input 课程目录  # 词法检索
+python -m md_rewrite_engine --index 课程目录           # 生成 index.md 总索引
+python -m md_rewrite_engine --validate-links 课程目录  # 校验 [[链接]] 悬空
+python -m md_rewrite_engine --concepts 课程目录        # 生成概念页
+python -m md_rewrite_engine --search 关键词 --input 课程目录  # 词法检索
 ```
 
 > **推荐用法（本体主控）**：把转写丢给 Claude 对话，按 `docs/orchestration-manual.md` 10 步亲自编排，脚本只调机器活（质检/评分/对账/输出）。见 `docs/user-guide.md`。
@@ -70,9 +70,9 @@ python cli.py --search 关键词 --input 课程目录  # 词法检索
 ## 架构
 
 ```
-cli.py ──→ services ──→ core（纯算法）
-              │  ├─→ providers（LLM/文件/git/执行者）
-              └──→ configs（规范/偏好/模型/执行者）
+python -m md_rewrite_engine ──→ services ──→ core（纯算法）
+                                    │  ├─→ providers（LLM/文件/git/执行者）
+                                    └──→ configs（规范/偏好/模型/执行者）
 ```
 
 - **core/**：纯算法零外部依赖（assemble / chunk / rewrite / verify / concepts / md_index / search）
@@ -87,7 +87,7 @@ cli.py ──→ services ──→ core（纯算法）
 ```bash
 python -m pytest tests/ -q          # 单元测试 169
 python tests/exhaustive/s2_exhaustive.py   # S2 穷举 137（全 mock）
-python scripts/gate_check.py 笔记.md --src 原文.md   # 门禁一键检查（PASS/FAIL+问题清单）
+python -m scripts.gate_check 笔记.md --src 原文.md   # 门禁一键检查（PASS/FAIL+问题清单）
 ```
 
 ## 文档
@@ -108,7 +108,7 @@ python scripts/gate_check.py 笔记.md --src 原文.md   # 门禁一键检查（
 ## FAQ（常见问题）
 
 **问：重排环节必须在对话里用 Claude 吗？**
-不必——脚本可以端到端驱动任何已配置的执行者（`cli.py 输入.md`）。推荐"人机接力"是因为重排质量取决于"整篇都在上下文里"，这正是对话模型擅长的。无论哪种方式，门禁（`gate_check.py`）都兜底。
+不必——脚本可以端到端驱动任何已配置的执行者（`python -m md_rewrite_engine 输入.md`）。推荐"人机接力"是因为重排质量取决于"整篇都在上下文里"，这正是对话模型擅长的。无论哪种方式，门禁（`gate_check.py`）都兜底。
 
 **问：gate_check 对 ASR 转写总是 FAIL（数字对不上）？**
 那是机械对账在干活——但请先确认 `--src` 传入的是**清洗后**的原文；数字阈值在 `configs/user_prefs.yaml`。

@@ -19,19 +19,20 @@ import urllib.error
 from unittest.mock import patch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, ROOT)
 
-from providers import executors as EX  # noqa: E402
-from providers import llm_client as lc  # noqa: E402
-from core import assemble as A  # noqa: E402
-from core import chunk as CH  # noqa: E402
-from core import concepts as CN  # noqa: E402
-from core import rewrite as RW  # noqa: E402
-from core import verify as V  # noqa: E402
-from services import llm as LLM  # noqa: E402
-from services import orchestrator as O  # noqa: E402
+from md_rewrite_engine.providers import executors as EX  # noqa: E402
+from md_rewrite_engine.providers import llm_client as lc  # noqa: E402
+from md_rewrite_engine.core import assemble as A  # noqa: E402
+from md_rewrite_engine.core import chunk as CH  # noqa: E402
+from md_rewrite_engine.core import concepts as CN  # noqa: E402
+from md_rewrite_engine.core import rewrite as RW  # noqa: E402
+from md_rewrite_engine.core import verify as V  # noqa: E402
+from md_rewrite_engine.services import llm as LLM  # noqa: E402
+from md_rewrite_engine.services import orchestrator as O  # noqa: E402
 from scripts import gate_check as GC  # noqa: E402
-import cli  # noqa: E402
+import md_rewrite_engine.__main__ as cli  # noqa: E402
 
 _ENV_KEYS = ("GLM_API_KEY", "DEEPSEEK_API_KEY", "ANTHROPIC_AUTH_TOKEN",
              "ANTHROPIC_BASE_URL", "MD_REWRITE_PROVIDER_REWRITE",
