@@ -75,10 +75,19 @@ python -m md_rewrite_engine ──→ services ──→ core（纯算法）
                                     └──→ configs（规范/偏好/模型/执行者）
 ```
 
-- **core/**：纯算法零外部依赖（assemble / chunk / rewrite / verify / concepts / md_index / search）
-- **services/**：编排 + LLM prompt（orchestrator / llm）
-- **providers/**：外部适配（llm_client / file_io / git_io / executors）
-- **configs/**：note_style_spec（教学结构）/ executors（执行者）/ models（模型档位）/ user_prefs（偏好）
+全部代码位于标准 `src/` 布局：
+
+```
+src/md_rewrite_engine/
+├── __main__.py       # 入口：python -m md_rewrite_engine（薄层，只解析参数）
+├── core/             # 纯算法（assemble / chunk / rewrite / verify / concepts /
+│                     #   md_index / search / toc）——零外部依赖
+├── services/         # 编排 + LLM prompt（orchestrator / llm）
+├── providers/        # 外部适配（llm_client / file_io / git_io / executors）
+└── configs/          # note_style_spec（教学结构）/ executors / models / user_prefs
+```
+
+上游（任何产出"清洗后 md"的工具——视频/音频转写、OCR、PDF 解析）喂给本引擎；输入要求见 `docs/input-spec.md`。
 
 核心契约见 `docs/directory-contract.md`。
 

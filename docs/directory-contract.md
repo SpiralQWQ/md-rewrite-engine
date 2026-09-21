@@ -2,7 +2,7 @@
 
 > **状态**：✅ 已冻结（2026-08-19）｜ **版本**：v2.2
 > **审批人**：用户（Tech Lead）｜ **约束**：后续新增目录/职责必须改此契约并重新冻结，严禁擅自加目录
-> **变更记录**：v1.0（2026-08-13 冻结）→ v2.0（2026-08-16）新增执行者选择器（configs/executors.yaml + providers/executors.py）、S2 穷举脚本、docs 文档规范化（英文 kebab-case + archive 归档）→ v2.1（2026-08-18）新增 `core/toc.py`（篇内目录）→ v2.2（2026-08-19，对应 v0.4.1）新增 `scripts/gate_check.py`（门禁一键检查）与 `tests/scripts/`，docs 归档 v0.3.0/v0.4.0 验收报告。
+> **变更记录**：v1.0（2026-08-13 冻结）→ v2.0（2026-08-16）新增执行者选择器（configs/executors.yaml + providers/executors.py）、S2 穷举脚本、docs 文档规范化（英文 kebab-case + archive 归档）→ v2.1（2026-08-18）新增 `core/toc.py`（篇内目录；现位于 src/md_rewrite_engine/core/）→ v2.2（2026-08-19，对应 v0.4.1）新增 `scripts/gate_check.py`（门禁一键检查）与 `tests/scripts/`，docs 归档 v0.3.0/v0.4.0 验收报告。
 
 ## 1. 项目定位
 

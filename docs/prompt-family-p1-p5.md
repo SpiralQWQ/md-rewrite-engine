@@ -1,6 +1,6 @@
 # 提示词家族 · P1-P5（本体主控 + GLM 检查，v0.3.0）
 
-> 日期：2026-08-16｜P1/P2/P3 = 本体（我）用，P4/P5 = GLM 用（已在 services/llm.py 落地）。
+> 日期：2026-08-16｜P1/P2/P3 = 本体（我）用，P4/P5 = GLM 用（已在 src/md_rewrite_engine/services/llm.py 落地）。
 > P1/P2/P3 是我主控时在对话里照着执行的提示词规则。
 
 ---
@@ -63,13 +63,13 @@
 
 ## P4 · GLM 质检提示词（quality_check，已代码化）
 
-> 已落地 `services/llm.py build_quality_prompt`。四组维度：
+> 已落地 `src/md_rewrite_engine/services/llm.py` 的 `build_quality_prompt`。四组维度：
 > ① AI 友好 ② 详细（6件套/费曼4角度）③ 准确（术语/错字/幻觉/概念偷换）④ 完整（关键点/漏知识点）。
 > 只报真问题，不报措辞偏好。
 
 ## P5 · GLM 评分提示词（scoring，已代码化）
 
-> 已落地 `services/llm.py build_scoring_prompt`。95 目标线 + 具体问题主导：
+> 已落地 `src/md_rewrite_engine/services/llm.py` 的 `build_scoring_prompt`。95 目标线 + 具体问题主导：
 > 95+ 可教 / 80-94 偏浅需补详细度 / <80 不合格；评分结合具体问题。
 
 ---

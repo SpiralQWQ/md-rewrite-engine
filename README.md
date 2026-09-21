@@ -97,11 +97,25 @@ python -m md_rewrite_engine ──→ services ──→ core (pure algorithms)
                                     └──→ configs (spec / prefs / models / executors)
 ```
 
-- **core/** — pure algorithms, zero external deps (assemble / chunk / rewrite /
-  verify / concepts / md_index / search)
-- **services/** — orchestration + LLM prompts (orchestrator / llm)
-- **providers/** — external adapters (llm_client / file_io / git_io / executors)
-- **configs/** — note_style_spec (teaching scaffold) / executors / models / user_prefs
+Everything lives under the standard `src/` layout:
+
+```
+src/md_rewrite_engine/
+├── __main__.py       # entry: python -m md_rewrite_engine (thin arg parsing)
+├── core/             # pure algorithms (assemble / chunk / rewrite / verify /
+│                     #   concepts / md_index / search / toc) — zero external deps
+├── services/         # orchestration + LLM prompts (orchestrator / llm)
+├── providers/        # external adapters (llm_client / file_io / git_io / executors)
+└── configs/          # note_style_spec (teaching scaffold) / executors / models / user_prefs
+```
+
+- **core/** — pure algorithms, zero external deps
+- **services/** — orchestration + LLM prompts
+- **providers/** — external adapters (GLM / DeepSeek / Anthropic clients)
+- **configs/** — teaching scaffold, executor bindings, model tiers, user prefs
+
+Upstream (any tool producing cleaned markdown — video/audio transcription,
+OCR, PDF extraction) feeds this engine; see `docs/input-spec.md`.
 
 Contract details: `docs/directory-contract.md`.
 
