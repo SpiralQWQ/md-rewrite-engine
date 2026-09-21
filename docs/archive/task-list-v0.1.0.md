@@ -30,7 +30,7 @@
 | Task | 内容 | 验收点 |
 |---|---|---|
 | Task-11 | note_style_spec v1.2 OKF 字段落位（confidence/sources/status/wikilinks） | configs yaml 校验通过，与 v1.1 兼容 |
-| Task-12 | `transcription-tools` 加"组装 md"步骤（json+txt → 半成品 md） | 输入转写 json + visual txt → 输出半成品 md，老提示保留 |
+| Task-12 | `上游转写工具` 加"组装 md"步骤（json+txt → 半成品 md） | 输入转写 json + visual txt → 输出半成品 md，老提示保留 |
 
 ## 阶段 D · 测试 + 验收
 

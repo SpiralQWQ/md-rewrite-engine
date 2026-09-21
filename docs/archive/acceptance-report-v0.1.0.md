@@ -18,7 +18,7 @@
 | Task-09 | services/orchestrator.py | ✅ | 全链路/打回重写/LLM评分 |
 | Task-10 | cli.py | ✅ | 防呆/参数透传/--json |
 | Task-11 | note_style_spec v1.2（OKF） | ✅ | 8字段+OKF 4字段+7栏目 |
-| Task-12 | transcription-tools 组装 md | ✅ | 真实产物组装/防呆/CLI |
+| Task-12 | 上游转写工具 组装 md | ✅ | 真实产物组装/防呆/CLI |
 | Task-13 | tests 全量 | ✅ | 41/41 unittest |
 | Task-14 | 全量回归 + 终点一致性 | ✅ | 见下 |
 | Task-15 | CHANGELOG | ✅ | 见 `CHANGELOG.md` |

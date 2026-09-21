@@ -9,7 +9,7 @@
 
 ### Added
 
-- **首次开源发布**：由内部 `md-rewrite-engine` 代码库整理而来——全量隐私清洗
+- **首次开源发布**：由内部代码库（发布前工作名不提及）整理而来——全量隐私清洗
   （内部路径/项目名/供应商细节零残留）、双语 README 与 CHANGELOG（英/中）、
   AGPL-3.0 + 商用双许可、CONTRIBUTING / CODE_OF_CONDUCT / SECURITY、路线图、打赏码。
 - 测试资产入库：`tests/exhaustive/s2_exhaustive.py`（137 用例全 mock）+ 169 单元测试。

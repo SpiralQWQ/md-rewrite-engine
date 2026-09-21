@@ -1,7 +1,7 @@
 # Acceptance Report · Open-Source Release of md-rewrite-engine v0.4.3
 
 > Date: 2026-09-20
-> Scope: local `md-rewrite-engine` → public repo `SpiralQWQ/md-rewrite-engine`
+> Scope: local pre-release codebase → public repo `SpiralQWQ/md-rewrite-engine`
 > Verdict: **✅ PASS** — 14/14 tasks closed, 169 unit + 137 exhaustive tests green,
 > privacy sweep zero-hit, git history clean from the first commit.
 

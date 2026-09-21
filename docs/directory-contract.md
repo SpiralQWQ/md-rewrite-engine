@@ -14,14 +14,14 @@
 ## 2. 接口边界（谁生产 md，谁负责组装）
 
 ```
-[视频线] 转写json + visual.txt ──组装(归transcription-tools)──→ 半成品md ──清洗──→┐
+[transcript] ASR json + visual txt ──组装(上游转写工具)──→ 半成品md ──清洗──→┐
 [文档线] MinerU ──清洗──→ 清洗后md ───────────────────────────────────────→┤
                                                                           ▼
                                                     md-rewrite-engine（本模块）→ AI 友好 md
 ```
 - **输入**：只收「清洗后的 md」（形态 A）。不支持收转写 json/txt —— 组装是生产方（视频线）的职责。
 - **输出**：按 `configs/note_style_spec.yaml` 的 AI 友好 md（含 OKF 字段）。
-- **兼容**：老流程（`transcription-tools` 直接交给 Claude 生成）不改、照用；本模块是新增独立路。
+- **兼容**：老流程（转写产物直接交给 Claude 生成）不改、照用；本模块是新增独立路。
 
 ## 3. 范式选择：混合模式（分层 + 职责域）
 

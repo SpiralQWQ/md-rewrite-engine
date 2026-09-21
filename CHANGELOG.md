@@ -11,7 +11,7 @@ All notable changes to this project are documented here, following
 ### Added
 
 - **First open-source release**: repository prepared from the internal
-  `md-rewrite-engine` codebase — full privacy sanitization (no internal paths /
+  codebase (pre-release working name omitted) — full privacy sanitization (no internal paths /
   project names / provider quirks), bilingual README & CHANGELOG (EN/zh),
   AGPL-3.0 + commercial dual license, CONTRIBUTING / CODE_OF_CONDUCT /
   SECURITY, roadmap, donate banners.

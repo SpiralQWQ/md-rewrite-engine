@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""cli.py — md-rewrite-engine 命令行入口（薄层：只解析参数 → 调 orchestrator）。
+"""md_rewrite_engine 命令行入口（薄层：只解析参数 → 调 orchestrator）。
 
 用法:
     python cli.py <清洗后md路径> [--output 输出.md] [--max-chars 8000]
