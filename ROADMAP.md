@@ -14,6 +14,11 @@ shift with real usage. Feel free to open an issue to push something up the list.
 
 ## Mid term
 
+- **Sync from the internal build** — `build_course_index(course_name=...)`
+  explicit course-name override + natural chapter sorting (chapter 10 sorts
+  after chapter 2, not lexicographic). Landed in the internal codebase first;
+  needs its own tests before shipping here.
+
 - **Gate-as-CI** — run `gate_check.py` on every commit of a notes repository
   (GitHub Actions example included in docs).
 - **Cross-note reconciliation** — reuse the concept map to detect contradictions
