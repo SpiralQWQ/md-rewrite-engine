@@ -62,7 +62,21 @@
   on their own material.
 - Gate thresholds tuned for Chinese ASR/rewrite material (roadmap: English spec).
 
-## 5. Release mechanics
+## 5. Hard-threshold recheck (promotion checklist v1.0)
 
-- Branch: `master`, 2 commits (`7725709` release, `46ae91f` governance).
+| Item | Result |
+|---|---|
+| src/ layout | ✅ `src/md_rewrite_engine/` + `python -m md_rewrite_engine` + console script `md-rewrite` |
+| pyproject.toml | ✅ version/deps/license/authors/keywords/classifiers/urls/scripts |
+| dead code | ✅ heuristic sweep: 0 unreferenced module-level functions |
+| secrets/paths | ✅ deep scan 0 hits (scanner kept outside repo) |
+| git history | ✅ all 5 commits created post-sanitization; no pre-clean content ever committed |
+| self-check | ✅ `python -m md_rewrite_engine` runs; `import md_rewrite_engine; __version__ == "0.4.3"`; git status clean |
+| Bonus: CI | ✅ GitHub Actions matrix (3 OS × py3.10-3.12, unit + exhaustive) |
+| Bonus: tag | ✅ `v0.4.3` annotated tag |
+| Bonus: community | ✅ issue templates (bug / feature with gate-impact question), SECURITY.md |
+
+## 6. Release mechanics
+
+- Branch: `master`, 5 commits (`7725709` release → `84195f9` ci), tag `v0.4.3`.
 - Remote push & GitHub repo creation: pending user go (out of scope here).
