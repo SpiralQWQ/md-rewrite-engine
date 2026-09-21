@@ -172,7 +172,8 @@ def _fmt(report: dict) -> str:
         s6_desc = f"❌ {len(s6['missing'])} 个知识点不全: {detail}"
     lines.append(f"② 6 件套: {s6_desc}")
     fy = report["feynman"]
-    lines.append(f"③ 费曼示范: {'✅ 每点≥2' if fy['ok'] else f'❌ {len(fy['low'])} 个不足'}")
+    fy_desc = '✅ 每点≥2' if fy['ok'] else f"❌ {len(fy['low'])} 个不足"
+    lines.append(f"③ 费曼示范: {fy_desc}")
     if report.get("score") is not None:
         lines.append(f"④ GLM 评分: {report['score']} {'✅' if report['score_ok'] else '❌'}")
     lines.append(f"判定: {'✅ PASS' if report['pass'] else '❌ FAIL'}")
