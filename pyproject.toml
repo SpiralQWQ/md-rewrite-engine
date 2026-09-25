@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "md-rewrite-engine"
-version = "0.4.3"
+version = "0.4.5"
 description = "Reshape cleaned markdown (transcripts, OCR, PDF extraction) into AI-teachable notes — human-machine relay pipeline with a fail-closed quality gate"
 readme = "README.md"
 requires-python = ">=3.10"

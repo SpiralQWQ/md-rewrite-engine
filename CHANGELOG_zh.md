@@ -5,6 +5,27 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.5-os] - 2026-09-22
+
+### Added
+
+- **丰富度门禁（第 5 指标，硬判定）**：机械对账管"丢没丢"，管不了"讲不讲得开"——对账 100% 的笔记照样能把完整推导压成 4 行提词卡（实测样本膨胀率仅 42%）。`core/verify.py` 新增（纯函数、零依赖）：
+  - `expansion_ratio` / `expansion_verdict`——膨胀率 = 笔记内容量 / 过滤后源内容量；三区间判定：≥0.80 直过 / [0.30, 0.80) 豁免候选（知识点覆盖 ≥80% + 结构化承载 ≥10 行 + 逐单元中位 ≥40%）/ <0.30 绝对红线。判据经 6 轮真实数据校准迭代定稿，每版失败原因与实测锚定数字写入 docstring 防回退；
+  - `_content_len`（剥 frontmatter/markdown 标记/空白的字符口径）/ `_structured_carry` / `_kp_cover` / `_src_sections`（编号后容错中英文标点）/ `_unit_ratios`（逐单元膨胀率）。
+- `scripts/gate_check.py` 挂载第 5 指标（`⑤ 丰富度(膨胀率)` 输出行 + 不达标硬进问题清单）；阈值从 `configs/user_prefs.yaml` `expansion_ratio.general/dedup`（0.80/0.65）读取。
+- `docs/orchestration-manual.md`：第 4 步丰富度铁律（公式推导一条不丢、只许展开不许压缩、自检 1.0~1.3 倍、对过滤后源计算）+ 第 7 步五指标描述。
+- `docs/prompt-family-p1-p5.md`：P1 硬规则（公式逐个完整推导、OCR 公式修复、自检 <0.8 回炉）+ 新增「自加内容纪律」段（自加示例必须按同知识点公式复算——多智能体对抗审查实证 6 个 P0 事实错误全集中在自加示例字段）。
+
+### Fixed
+
+- **gate_check 双源口径**：丰富度门禁必须用剥 `_clean_meta` 前的源——剥「1.1」章节编号会让 `_src_sections` 编号正则失配、退回数全部 `##`，分母虚增 3~5 倍误拦合格笔记（实测某笔记覆盖率从 120% 腰斩到 34%）；数字对账仍用清洗后源。
+- **`_unit_ratios` 标题格式盲区**：笔记侧正则只认 `### N ·`，`### 知识点 N ·` 体的笔记逐单元检查被静默跳过（unit_median 兜底 1.0 掩盖压缩）；现两种排版体都认。
+- **fail-closed 报告 schema**：fail-closed 分支缺 `score_ok` 键致 schema 与正常报告不一致；补齐并加 schema 全等测试固化。
+
+### Security
+
+- Maintained: API keys via env vars; no new dependencies.
+
 ## [0.4.3-os] - 2026-09-20
 
 ### Added

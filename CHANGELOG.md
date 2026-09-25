@@ -6,6 +6,56 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.5-os] - 2026-09-22
+
+### Added
+
+- **Richness gate (metric 5, hard verdict)**: mechanical reconciliation checks
+  "did anything get dropped" but not "is it still teachable" — a note with 100%
+  reconciliation can still compress a full derivation into 4 bullet lines
+  (measured sample: 42% expansion). New in `core/verify.py` (pure functions,
+  zero-dependency):
+  - `expansion_ratio` / `expansion_verdict` — expansion = note content chars /
+    filtered-source content chars; three-band verdict: ≥0.80 direct pass /
+    [0.30, 0.80) exemption candidates (knowledge-point coverage ≥80% +
+    structured carry ≥10 lines + per-unit median ≥40%) / <0.30 hard red line.
+    Judgement evolved through 6 rounds of real-data calibration; the full
+    evolution (each version's failure mode + measured anchors) is in the
+    docstring to prevent regression.
+  - `_content_len` (frontmatter/markdown/whitespace-stripped char count) /
+    `_structured_carry` / `_kp_cover` / `_src_sections` (tolerates CJK/Latin
+    punctuation after the number) / `_unit_ratios` (per-unit expansion).
+- `scripts/gate_check.py` now mounts metric 5 (`⑤ 丰富度(膨胀率)` output line +
+  hard FAIL into the defect list); thresholds read from
+  `configs/user_prefs.yaml` `expansion_ratio.general/dedup` (0.80 / 0.65).
+- `docs/orchestration-manual.md`: richness iron-law in step 4 (keep every
+  derivation, expand never compress, self-check 1.0~1.3×, compute against the
+  *filtered* source) + five-metric description in step 7.
+- `docs/prompt-family-p1-p5.md`: P1 hard rules (keep all formulas with full
+  derivation, fix OCR-damaged LaTeX, self-check <0.8 → rewrite) + new
+  "self-authored content discipline" section (self-added examples must be
+  re-computed against the same note's formulas — a 6-agent adversarial review
+  found all P0 factual errors concentrated there).
+
+### Fixed
+
+- **Dual-source口径 in gate_check**: the source fed to the expansion gate must
+  be the pre-`_clean_meta` source — stripping section numbers (`1.1`) makes the
+  `_src_sections` regex fall back to counting all `##`, inflating the
+  denominator 3~5× and falsely failing legitimate notes (measured: a note with
+  120% coverage dropped to 34%). Number reconciliation still uses the cleaned
+  source.
+- **`_unit_ratios` heading-format blind spot**: note-side regex only matched
+  `### N ·`; `### 知识点 N ·` notes silently skipped per-unit checks
+  (unit_median fell back to 1.0, masking compression). Now both formats match.
+- **fail-closed report schema**: the fail-closed branch lacked the `score_ok`
+  key, so its schema differed from normal reports; added, with a schema-equality
+  test to lock it.
+
+### Security
+
+- Maintained: API keys via env vars; no new dependencies.
+
 ## [0.4.3-os] - 2026-09-20
 
 ### Added

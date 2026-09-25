@@ -24,6 +24,12 @@ _SCORE_THRESHOLD = 80           # 质量分及格线
 # 关键信息点提取
 _TOKEN_SPLIT = re.compile(r"[A-Za-z]+|\d+(?:\.\d+)?|[一-鿿]{2,}")
 
+# 术语变体检测最小窗口（>=4 字：3 字窗口全是虚词碎片误报；2 字段=常用词互转）
+_VARIANT_MIN_LEN = 4
+# 虚词前导表（窗口以这些字开头 = 量词/虚词碎片，实测全是措辞差异非错字；
+# 真术语窗口以实词开头：文件型/轻量级/各种数据库）
+_VARIANT_STOP_HEADS = frozenset("的到是了在有和与或等各每把将从被以于其中这那及就不也")
+
 
 def extract_keypoints(text: str) -> set:
     """提取"事实关键点"：英文术语(≥3) + 数字(≥2 有效位，含版本号如 3.12)。
@@ -323,6 +329,316 @@ def validate_frontmatter_schema(frontmatter: dict, required: list, types: dict =
             elif t == str and not isinstance(frontmatter[f], str):
                 type_errors.append(f"{f} 应为字符串")
     return {"ok": not missing and not type_errors, "missing": missing, "type_errors": type_errors}
+
+
+def _edit_distance(a: str, b: str) -> int:
+    """Levenshtein 编辑距离（动态规划，标准实现；输入保证为短中文词）。"""
+    if a == b:
+        return 0
+    la, lb = len(a), len(b)
+    if la == 0 or lb == 0:
+        return max(la, lb)
+    prev = list(range(lb + 1))
+    for i in range(1, la + 1):
+        cur = [i] + [0] * lb
+        ca = a[i - 1]
+        for j in range(1, lb + 1):
+            cost = 0 if ca == b[j - 1] else 1
+            cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+        prev = cur
+    return prev[lb]
+
+
+def term_variants(original: str, rewritten: str) -> list:
+    """中文术语近形变体检测（错别字机检，纯算法兜底）。
+
+    原理：两侧各抽连续中文段（_TOKEN_SPLIT 的 [一-鿿]{2,} token），对 **≥3 字段**
+    找**等长且编辑距离=1** 的对应段——即"术语中替换了 1 个字"形态。实测调优
+    （14 章真实重排 3 轮迭代）：① 不等长改写全部放过（合法改写=虚词增删：
+    加"的"、删"中"、并句）；② 2 字段等长替换不报（常用词互转太泛：通常→通过、
+    首先→要先，实测 119 条全是改写非错字）；③ ≥3 字段等长换 1 字只剩两类——
+    同音/形近错字（调度器→掉度器）与真语义替换（子节点→父节点），两者都值得
+    人工复核，实测每章 0~10 条、无误伤拦截（软提示不判 pass）。
+
+    Returns:
+        [{"term": 原文段, "variant": 重排版近形段, "distance": int}]，≤10 条防刷屏。
+    """
+    if not isinstance(original, str) or not isinstance(rewritten, str):
+        return []
+    if not original or not rewritten:
+        return []
+    src_segs = [t for t in _TOKEN_SPLIT.findall(original)
+                if len(t) >= _VARIANT_MIN_LEN and not t.isascii()]
+    dst_segs = [t for t in _TOKEN_SPLIT.findall(rewritten)
+                if len(t) >= _VARIANT_MIN_LEN and not t.isascii()]
+    if not src_segs or not dst_segs:
+        return []
+    dst_by_len: dict = {}
+    for v in dst_segs:
+        dst_by_len.setdefault(len(v), set()).add(v)
+    out = []
+    seen = set()
+    for term in src_segs:
+        if term in seen:
+            continue
+        seen.add(term)
+        hit = None
+        # 对源段的每个 n-gram 窗口（n=候选段长）找 dist≤1 的对应——
+        # 整段边界在重排中会漂移（前缀词增删），等长约束只能在**窗口级**成立。
+        # 窗口长度同样受 _VARIANT_MIN_LEN 约束（短窗口全是虚词碎片误报），
+        # 且**最长窗口优先**——术语级替换窗口长（≥4），优先报最具体的证据。
+        # 虚词前导过滤仅对「切出的子窗口」生效——整段窗口（n==len(term)）不跳：
+        # 整段就是 token 本体（如"的调度器管理请求队列"），虚词开头不代表它是碎片
+        for n in sorted((n for n in dst_by_len if n >= _VARIANT_MIN_LEN and n <= len(term)),
+                        reverse=True):
+            cands = dst_by_len[n]
+            for i in range(len(term) - n + 1):
+                window = term[i:i + n]
+                if n < len(term) and window[0] in _VARIANT_STOP_HEADS:
+                    continue                    # 虚词前导子窗口（量词/措辞碎片），非术语
+                if window in cands:
+                    break                       # 该窗口原样保留，无嫌疑
+                for v in cands:
+                    if window in v or v in window:
+                        continue                # 包含关系=截断/扩展，非错字
+                    if 0 < _edit_distance(window, v) <= 1:
+                        hit = {"term": window, "variant": v, "distance": 1}
+                        break
+            if hit:
+                break
+        if hit:
+            out.append(hit)
+    return out[:10]
+
+
+# ── 丰富度门禁（v0.4.5）──
+# markdown 标记符号（膨胀率口径中剔除，防格式噪声干扰内容量度量）
+_MD_MARKS = re.compile(r"[#*`|>\-\[\]()]")
+
+
+def _content_len(text: str) -> int:
+    """内容字符数：剥 frontmatter / markdown 标记 / 空白后的净内容量。
+
+    膨胀率的度量口径——比 len(text) 抗格式噪声（md 符号多少不代表内容多少）。
+    """
+    if not isinstance(text, str) or not text:
+        return 0
+    if text.startswith("---"):
+        m = re.search(r"^---\n.*?\n---\n", text, re.S)
+        if m:
+            text = text[m.end():]
+    return len(re.sub(r"\s", "", _MD_MARKS.sub("", text)))
+
+
+def expansion_ratio(original: str, rewritten: str) -> float:
+    """膨胀率 = 笔记内容量 / 源内容量（丰富度门禁的核心度量，v0.4.5）。
+
+    背景：机械对账管"丢没丢"（数字覆盖率），管不了"讲不讲得开"——一篇对账
+    100% 的笔记照样可以把完整推导压缩成 4 行提词卡（实测样本：膨胀率仅 42%，源文档一处的四条机制被压成一行）。本函数给出可计算的丰富度度量，
+    供 gate_check 第 5 指标判定。
+
+    口径（重要）：original 必须传**过滤后源**（clean_only.md）——未过滤源含
+    OCR 噪音会虚高分母（实测：未过滤 36% / 过滤后 100%）。
+
+    Args:
+        original: 源文（清洗/过滤后 md 全文）。
+        rewritten: 重排后笔记全文。
+
+    Returns:
+        膨胀率 float（0~∞，>1 表示扩写）；源为空返回 0.0（交由调用方判边界）。
+    """
+    original = original if isinstance(original, str) else ""
+    rewritten = rewritten if isinstance(rewritten, str) else ""
+    s = _content_len(original)
+    if s == 0:
+        return 0.0
+    return _content_len(rewritten) / s
+
+
+def _structured_carry(note: str) -> int:
+    """笔记中结构化载体（表格行+代码行）的内容量——聚合豁免检测用。
+
+    低膨胀率有两种成因：①合理聚合（逐例展开→语法表+代表例，信息无损重组，
+    实测某聚合章 31%：源179行代码聚合成11行语法表+9行代表例）；②偷工压缩
+    （保留结论删推导，实测压缩样本 42%：四条机制压成一行，无任何结构化承载）。
+    两者的区分信号 = 笔记里有没有承载源信息的结构化形式（表格/代码）。
+    """
+    if not isinstance(note, str):
+        return 0
+    carry = 0
+    in_code = False
+    for ln in note.splitlines():
+        s = ln.strip()
+        if s.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code:
+            carry += len(s)                     # 代码行全量计入（保留的示例/公式）
+        elif s.startswith("|"):
+            carry += len(s)                     # 表格行计入（语法表/对照表）
+    return carry
+
+
+def _kp_cover(note: str) -> int:
+    """笔记知识点结构数：###/## 标题数（含知识点小节+结构化分节）。"""
+    if not isinstance(note, str):
+        return 0
+    return len(re.findall(r"^#{2,3} ", note, re.M))
+
+
+def _src_sections(src: str) -> int:
+    """源小节数：## 编号标题数（如 '## 3.1 xxx' / '## 9.2.2 xxx' / '## 1，题目'）。
+
+    编号后容错中英文标点/空格（教材体 '## 3.1 Selector'、编号体 '## 1，题目'、
+    '## 8. 请从...'都要命中——漏数会让豁免分母虚小、覆盖率虚高，实测样本
+    被误豁免 2900% 即此因）。
+    """
+    if not isinstance(src, str):
+        return 0
+    n = len(re.findall(r"^## \d+[.\d]*[ ，,．.、]", src, re.M))
+    return n if n else len(re.findall(r"^## ", src, re.M))
+
+
+def _unit_ratios(original: str, rewritten: str) -> list:
+    """逐单元膨胀率：按编号标题把源与笔记切成对应单元，算每单元内容量比。
+
+    豁免判据 v3 的核心度量——「聚合」与「压缩」在总体膨胀率上都是低值，
+    但逐单元不同：聚合是同构行合并成表，单元级信息无损；压缩
+    （压缩样本）是每题答案都瘦，逐题膨胀率中位仅 21%（实测）。
+
+    单元切分：源按 `## N[标点]` 编号标题切，笔记按 `### N ·` 或
+    `### N ·` 切（两种排版体都认——详解体用后者，漏认会让
+    逐单元检查被静默跳过、unit_median 兜底 1.0 掩盖压缩，2026-09-22 实测）；
+    只统计两侧都存在且源单元内容量 >50 字符的单元（滤标题残段）。
+    """
+    def split_by_num(text, pat):
+        parts = {}
+        if not isinstance(text, str):
+            return parts
+        matches = list(re.finditer(pat, text, re.M))
+        for i, m in enumerate(matches):
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            parts[int(m.group(1))] = _content_len(text[m.start():end])
+        return parts
+
+    src_parts = split_by_num(original, r"^##\s*(\d+)[.\d]*[ ，,．.、]")
+    note_parts = split_by_num(rewritten, r"^###\s*(?:知识点\s*)?(\d+)\s*·")
+    ratios = []
+    for num, s_len in src_parts.items():
+        if num in note_parts and s_len > 50:
+            ratios.append(note_parts[num] / s_len)
+    return ratios
+
+
+def expansion_verdict(original: str, rewritten: str, threshold: float = 0.80,
+                      dedup_threshold: float = 0.65, dedup: bool = False) -> dict:
+    """丰富度判定（膨胀率 + 聚合豁免，v0.4.5 门禁第 5 指标的判定入口）。
+
+    判定流程（豁免检测方案 v6，2026-09-21 定稿，三区间制）：
+      ① 膨胀率 ≥ 0.80 → PASS（丰富度达标）
+      ② 0.30 ≤ 膨胀率 < 0.80 → 豁免候选区，**三条件同时满足**才豁免：
+         a. 知识点覆盖：笔记标题结构数 ≥ 源小节数 × 0.8（覆盖不缩水）
+         b. 结构化承载：笔记表格行 + 代码行 ≥ 10 行（聚合的物理形态）
+         c. 逐单元膨胀率中位 ≥ 0.40（每个信息单元不能瘦过四成——
+            区分"重组"与"压缩"的唯一可靠信号）
+         三条件满足 = 合理聚合放行（exempt=True，warning 记录）
+      ③ 膨胀率 < 0.30 → FAIL（绝对红线：内容量不足三成，任何形式都不合理）
+
+    判据演化教训（勿回退）：
+      v1「承载字符/源字符 ≥60%」数学上自相矛盾——聚合就是 100 字压成 20 字
+      表格承载同样信息，承载字符天然远小于源（某聚合章仅 17% 却是合格聚合）。
+      v2 覆盖+承载双条件 → 压缩样本（每题中位 21%）被误豁免 322%。
+      v3 逐单元中位 ≥65% → 对"源单元并入笔记无编号概述段"的排版差异过敏
+      （某章 77% 合格笔记被误杀——单元1并入概述段，编号对不上）。
+      v4 红线65%一刀切 → 多个合格聚合章（31%~61%）全部误杀。
+      v5 红线40% → 某聚合章 31% 撞线。
+      v6 定稿：红线 30% + 豁免区 30~80% + 逐单元中位 ≥40%。实测全部校准样本
+      不误杀（31%~130% 全过），压缩样本 42%（逐单元中位 21%）被拦。
+
+    阈值参数说明：threshold/dedup_threshold 来自 configs/user_prefs.yaml；
+    红线 0.30 与逐单元线 0.40 为定稿常量（有多组合格笔记+压缩样本实测锚定），如需调整
+    须重新走数据校准流程。
+
+    Args:
+        original: 过滤后源全文。
+        rewritten: 笔记全文。
+        threshold: 正常膨胀率下限（configs/user_prefs.yaml expansion_ratio.general）。
+        dedup_threshold: 去重场景下限（expansion_ratio.dedup）。
+        dedup: 是否按去重场景判定。
+
+    Returns:
+        {"ratio", "threshold", "carry", "kp_note", "kp_src", "kp_cover",
+         "unit_median", "ok", "exempt", "reason"}
+        - ok: 最终判定
+        - exempt: 是否触发聚合豁免（True 时 ok=True 但 reason 说明）
+    """
+    eff = dedup_threshold if dedup else threshold
+    ratio = expansion_ratio(original, rewritten)
+    note_kp = _kp_cover(rewritten)
+    src_kp = _src_sections(original)
+    kp_cover = note_kp / src_kp if src_kp else 1.0
+    carry = _structured_carry(rewritten)
+    ratios = _unit_ratios(original, rewritten)
+    unit_median = sorted(ratios)[len(ratios) // 2] if ratios else 1.0
+    res = {"ratio": round(ratio, 3), "threshold": eff, "carry": carry,
+           "kp_note": note_kp, "kp_src": src_kp,
+           "kp_cover": round(kp_cover, 2), "unit_median": round(unit_median, 2),
+           "ok": True, "exempt": False, "reason": ""}
+    if ratio >= eff:
+        res["reason"] = f"膨胀率 {ratio:.0%} ≥ {eff:.0%}，丰富度达标"
+        return res
+    # 红线下方：直接 FAIL
+    if ratio < 0.30:
+        res["ok"] = False
+        res["reason"] = (f"膨胀率 {ratio:.0%} < 绝对红线 30%——内容量不足三成，"
+                         f"任何聚合形式都不合理（参考：逐单元中位 {unit_median:.0%}）")
+        return res
+    # 豁免候选区 [0.30, threshold)：查覆盖 + 承载 + 逐单元三条件
+    kp_ok = src_kp == 0 or kp_cover >= 0.8
+    carry_ok = carry >= 10
+    unit_ok = not ratios or unit_median >= 0.40
+    if kp_ok and carry_ok and unit_ok:
+        res["ok"] = True
+        res["exempt"] = True
+        res["reason"] = (f"膨胀率 {ratio:.0%} 在豁免区 [30%~{eff:.0%})，"
+                         f"知识点覆盖 {kp_cover:.0%}（{note_kp}/{src_kp}）+ 结构化承载 "
+                         f"{carry} 行 + 逐单元中位 {unit_median:.0%} → 合理聚合，豁免放行")
+    else:
+        miss = []
+        if not kp_ok:
+            miss.append(f"知识点覆盖不足（{note_kp}/{src_kp}={kp_cover:.0%} < 80%）")
+        if not carry_ok:
+            miss.append(f"无结构化承载（表格+代码仅 {carry} 行 < 10）")
+        if not unit_ok:
+            miss.append(f"逐单元膨胀率中位 {unit_median:.0%} < 40%（各单元内容被压缩）")
+        res["ok"] = False
+        res["reason"] = (f"膨胀率 {ratio:.0%} 在豁免区但 {'；'.join(miss)}——疑似偷工")
+    return res
+
+
+def semantic_reconcile(original, rewritten, call=None) -> dict:
+    """语义级对账（B2）：调 LLM 判断"概念是否覆盖"，非词级数关键词。
+
+    core 零依赖铁律：LLM 通过 call 回调注入（services 层绑定 prompt + 模型）。
+    能检出"词级对账漏掉但概念级缺失"的 case（如 STAR法则 被改写为 四段式描述）。
+    LLM 不可用/异常 → 降级返回空缺失（不阻断主流程）。
+
+    Args:
+        original: 原文。
+        rewritten: 重排后。
+        call: 语义对账回调 call(original, rewritten) -> list[str] 缺失概念。
+
+    Returns:
+        {"missing": list, "ok": bool}
+    """
+    if call is None:
+        return {"missing": [], "ok": True}
+    try:
+        missing = call(original, rewritten)
+        missing = [str(x) for x in missing if str(x).strip()] if isinstance(missing, list) else []
+        return {"missing": missing, "ok": not missing}
+    except Exception:  # noqa: BLE001 LLM 失败降级，不阻断
+        return {"missing": [], "ok": True}
 
 
 # ── 阶段 5 · fail-closed 验证门禁（每块独立修补额度）──

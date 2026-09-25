@@ -41,8 +41,9 @@ quality without evidence. This project makes quality **measurable and enforced**
 - **Per-stage executors** — 4 stages (rewrite / reconcile / quality_check /
   scoring) each bind their own executor: `claude / glm / deepseek / anthropic`.
 - **Fail-closed gate** — one-shot check via `scripts/gate_check.py`: mechanical
-  reconciliation, 6-part completeness, Feynman demo, scoring. Not passing means
-  not passing.
+  reconciliation, 6-part completeness, Feynman demo, **richness expansion ratio**
+  (three-band verdict — kills "full derivation compressed into bullet cards"
+  even when reconciliation is 100%), scoring. Not passing means not passing.
 - **Anti-loop** — per-block repair budget (4 attempts) with accumulating feedback;
   exceeded → suspend for human review.
 - **Fixed teaching scaffold** — 6 sections (definition / analogy / principle /
@@ -122,7 +123,7 @@ Contract details: `docs/directory-contract.md`.
 ## Tests
 
 ```bash
-python -m pytest tests/ -q          # 169 unit tests
+python -m pytest tests/ -q          # 199 unit tests
 python tests/exhaustive/s2_exhaustive.py   # 137 exhaustive cases (fully mocked)
 python -m scripts.gate_check note.md --src source.md   # gate check (PASS/FAIL + defect list)
 ```

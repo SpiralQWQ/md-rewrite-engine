@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""scripts/gate_check.py — 本体主控门禁一键检查（v0.4.1 打回闭环落地）。
+"""scripts/gate_check.py — 本体主控门禁一键检查（v0.4.5 五指标）。
 
 本体（Claude 对话）重排完必跑本工具，拿到机器指标，决定「通过 / 打回 / 挂起」——
 把"靠自觉判断"替换成"机器门禁"。输入就是一份笔记 md + 一份原文 md（同工作流输入）。
@@ -9,7 +9,9 @@
      （原文若为 _clean.md 时间轴交错格式，自动抽 🎤 语音作基准；普通 md 用全文）
   ② 6 件套完整度：逐知识点查 定义/类比/原理/示例/为什么/易错点（命令块算示例）
   ③ 费曼示范：每知识点 ≥2 个「示范角度 / 费曼」标记
-  ④ [--score] GLM 评分（≥90 通过，70-89 缺料打回，<70 不合格）
+  ④ 丰富度膨胀率（v0.4.5，硬判定）：三区间——≥80% 直过 / [30%,80%) 聚合豁免三条件 /
+     <30% 绝对红线。专治「把完整推导压缩成提词卡」（对账 100% 也拦得住）
+  ⑤ [--score] GLM 评分（≥90 通过，70-89 缺料打回，<70 不合格）
 
 输出：逐项指标 + 汇总判定 PASS / FAIL（附问题清单）。
 退出码：0=PASS，1=FAIL（供集成/CI）。
@@ -24,6 +26,8 @@ import sys
 import yaml
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# configs/ 在 src/md_rewrite_engine/configs/（src 布局），经 _CONFIG_DIR 定位
+_CONFIG_DIR = os.path.join(ROOT, "src", "md_rewrite_engine", "configs")
 sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, ROOT)
 
@@ -36,7 +40,7 @@ _SCORE_REPAIR = 70            # 低于此不合格；70-89 缺料打回
 def _feynman_min() -> int:
     """读 configs/user_prefs.yaml 的 feynman_density.general（每知识点最小示范角度），缺失/异常回退默认 2。"""
     try:
-        p = os.path.join(ROOT, "configs", "user_prefs.yaml")
+        p = os.path.join(_CONFIG_DIR, "user_prefs.yaml")
         with open(p, encoding="utf-8") as f:
             d = yaml.safe_load(f)
         v = (d or {}).get("feynman_density", {}).get("general", 2)
@@ -60,6 +64,18 @@ def _clean_meta(text: str) -> str:
     text = re.sub(r"\b\d{1,2}\.\d{1,2}\b", " ", text)    # 章节编号 1.1/1.2
     text = re.sub(r"\b\d{3,}\.\d{1,3}\b", " ", text)      # 长数字浮点（OCR坐标/价格）
     return text
+
+
+def _expansion_thresholds() -> tuple:
+    """读 configs/user_prefs.yaml 的 expansion_ratio（general/dedup 阈值），缺失/异常回退 (0.80, 0.65)。"""
+    try:
+        p = os.path.join(_CONFIG_DIR, "user_prefs.yaml")
+        with open(p, encoding="utf-8") as f:
+            d = yaml.safe_load(f)
+        e = (d or {}).get("expansion_ratio", {})
+        return (float(e.get("general", 0.80)), float(e.get("dedup", 0.65)))
+    except Exception:  # noqa: BLE001 配置缺失回退默认，不阻断
+        return (0.80, 0.65)
 
 
 # ── ② 6 件套完整度 ──
@@ -107,8 +123,12 @@ def check_feynman(note_text: str) -> dict:
 def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
     note = open(note_path, encoding="utf-8").read()
     src = ""
+    src_raw = ""  # 剥编号前的源（仅供丰富度——章节编号是 _src_sections 的定位锚）
     if src_path and os.path.isfile(src_path):
-        src = _clean_meta(extract_speech(open(src_path, encoding="utf-8").read()))
+        src_raw = extract_speech(open(src_path, encoding="utf-8").read())
+        # _clean_meta 剥「1.1」章节编号会让 _src_sections 编号正则失配、退回数全部 ##，
+        # 分母虚增 3~5 倍 -> 覆盖率被腰斩误拦合格章。故丰富度用剥编号前的 src_raw。
+        src = _clean_meta(src_raw)
     elif src_path:
         # fail-closed：用户显式传了 --src 但文件不存在 → 判定 FAIL 并明示原因。
         # （曾为静默跳过报 100%——第1/2章源名错位时 PASS 因此造假，2026-09-20 修复）
@@ -116,8 +136,10 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
                 "reconcile": {"coverage": 0.0, "ok": False,
                               "missing": [], "warnings": [],
                               "note": f"--src 文件不存在: {src_path}"},
+                "expansion": None,
                 "six_sets": check_six_sets(note),
                 "feynman": check_feynman(note),
+                "score_ok": None,
                 "pass": False,
                 "problems": [f"原文基准文件不存在: {src_path}（机械对账无法执行，拒绝放行）"]}
 
@@ -130,6 +152,13 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
     else:
         report["reconcile"] = {"coverage": 1.0, "ok": True, "missing": [], "warnings": [],
                                "note": "无原文基准，机械对账跳过"}
+    # ①+ 丰富度门禁（膨胀率+聚合豁免，v0.4.5 第 5 指标——硬判定进 problems）
+    if src:
+        th_gen, th_dedup = _expansion_thresholds()
+        report["expansion"] = V.expansion_verdict(src_raw, note, threshold=th_gen,
+                                                  dedup_threshold=th_dedup)
+    else:
+        report["expansion"] = None
     # ② 6 件套
     s6 = check_six_sets(note)
     report["six_sets"] = s6
@@ -154,6 +183,9 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
         problems.append(f"6 件套不全 {len(s6['missing'])} 个知识点")
     if not fy["ok"]:
         problems.append(f"费曼示范不足 {len(fy['low'])} 个知识点")
+    exp = report.get("expansion")
+    if exp is not None and not exp["ok"]:
+        problems.append(f"丰富度不达标（膨胀率 {exp['ratio']:.0%}）：{exp['reason']}")
     if score is not None and not score_ok:
         problems.append(f"GLM 评分 {score} < {_SCORE_PASS}（缺料/不合格）")
     report["pass"] = not problems
@@ -174,6 +206,13 @@ def _fmt(report: dict) -> str:
     fy = report["feynman"]
     fy_desc = '✅ 每点≥2' if fy['ok'] else f"❌ {len(fy['low'])} 个不足"
     lines.append(f"③ 费曼示范: {fy_desc}")
+    exp = report.get("expansion")
+    if exp is not None:
+        tag = "直过" if not exp["exempt"] else "豁免"
+        mark = "✅" if exp["ok"] else "❌"
+        lines.append(f"⑤ 丰富度(膨胀率): {exp['ratio']:.0%} {mark} [{tag}] {exp['reason']}")
+    else:
+        lines.append("⑤ 丰富度(膨胀率): ⏭ 无原文基准，跳过")
     if report.get("score") is not None:
         lines.append(f"④ GLM 评分: {report['score']} {'✅' if report['score_ok'] else '❌'}")
     lines.append(f"判定: {'✅ PASS' if report['pass'] else '❌ FAIL'}")

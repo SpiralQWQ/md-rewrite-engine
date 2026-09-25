@@ -27,3 +27,10 @@ visual:
 # 费曼示范角度密度（v0.4.1 起；旧 10/8/6 题数已随"留白"定位废弃）
 feynman_density:
   general: 2              # 一般知识点最小示范角度数（scripts/gate_check.py 读取此值）
+
+# 丰富度门禁（v0.4.5 起；膨胀率 = 笔记内容量 / 源内容量，对「过滤后源」计算）
+# 口径：内容字符（剥 frontmatter / markdown 标记 / 空白），核心算法 core/verify.expansion_ratio
+# 校准依据：多组合格笔记实测 85%~118%，压缩样本 42%
+expansion_ratio:
+  general: 0.80           # 正常转写下限（笔记至多比源薄两成）
+  dedup: 0.65             # 去重合并场景下限（如章节间重复多，合并后允许更薄）

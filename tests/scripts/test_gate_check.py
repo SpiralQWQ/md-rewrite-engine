@@ -115,6 +115,69 @@ class TestRun(unittest.TestCase):
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_expansion_none_without_src(self):
+        # 无原文基准 → expansion=None，不进 problems
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            np = os.path.join(d, "n.md")
+            open(np, "w", encoding="utf-8").write(self._note())
+            rr = run(np, "")
+            self.assertIsNone(rr["expansion"])
+            self.assertTrue(rr["pass"])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_expansion_fail_blocks_pass(self):
+        # 薄笔记 vs 厚源：膨胀率撞绝对红线 → FAIL 且 problems 含丰富度（Task-02）
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            sp = os.path.join(d, "s.md")
+            np = os.path.join(d, "n.md")
+            open(sp, "w", encoding="utf-8").write("详细推导内容。" * 200)
+            open(np, "w", encoding="utf-8").write(self._note("薄。"))
+            rr = run(np, sp)
+            self.assertFalse(rr["pass"])
+            self.assertIsNotNone(rr["expansion"])
+            self.assertFalse(rr["expansion"]["ok"])
+            self.assertTrue(any("丰富度" in p for p in rr["problems"]))
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_expansion_pass_thick_note(self):
+        # 笔记扩写充足（≥80%）→ 直过不豁免
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            sp = os.path.join(d, "s.md")
+            np = os.path.join(d, "n.md")
+            open(sp, "w", encoding="utf-8").write("核心讲解内容。" * 100)
+            open(np, "w", encoding="utf-8").write(self._note("扩写讲解。" * 130))
+            rr = run(np, sp)
+            self.assertTrue(rr["expansion"]["ok"])
+            self.assertFalse(rr["expansion"]["exempt"])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_fail_closed_schema_includes_expansion(self):
+        # --src 不存在 → fail-closed FAIL；schema 与正常报告一致（expansion/score_ok 键）
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            np = os.path.join(d, "n.md")
+            sp = os.path.join(d, "s.md")
+            open(np, "w", encoding="utf-8").write(self._note())
+            open(sp, "w", encoding="utf-8").write("测试 3000 内容")
+            r_bad = run(np, os.path.join(d, "ghost.md"))
+            r_ok = run(np, sp)
+            self.assertFalse(r_bad["pass"])
+            self.assertIsNone(r_bad["expansion"])
+            self.assertIsNone(r_bad["score_ok"])
+            self.assertEqual(sorted(r_bad.keys()), sorted(r_ok.keys()))
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()
