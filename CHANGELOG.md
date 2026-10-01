@@ -6,6 +6,31 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.6-os] - 2026-10-01
+
+### Added
+
+- **Graphic-ebook source filter** (`scripts/filters/ebook_source_filter.py`):
+  MinerU graphic-ebook output interleaves every illustration with three blocks
+  (`## 插图笔记：<64-char hash>` / `## 图片内容（OCR）` / `## GLM 画面理解`), which
+  wrecks the gate — measured on a real book: 2,946 of 3,210 "must-keep keypoints"
+  came from image blocks (hash and OCR debris), so a note could never reconcile;
+  the expansion-ratio denominator was also inflated (a true 96% read as 31% and
+  looked like "compression"). The filter drops hash headers and scrambled OCR
+  while **keeping GLM picture descriptions** (on-image teaching text lives
+  there), producing a clean reconciliation baseline. The raw `full_embedded.md`
+  is never modified — it stays archived in full for traceability.
+  CLI: `python -m scripts.filters.ebook_source_filter --src <full_embedded.md> --out <clean_only.md> --keep-glm`
+- **Documentation sync from the internal codebase**: step 0 of
+  `docs/orchestration-manual.md` now covers both source types (text-PDF vs
+  graphic ebook); `docs/capability-functions.md` and `docs/user-guide.md`
+  refreshed to the five-metric gate; `docs/prompt-family-p1-p5.md` version
+  label aligned. README (en/zh) gains the source pre-filter feature entry.
+
+### Security
+
+- Maintained: API keys via env vars; no new dependencies.
+
 ## [0.4.5-os] - 2026-09-22
 
 ### Added

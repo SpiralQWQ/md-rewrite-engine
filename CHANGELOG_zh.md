@@ -5,6 +5,18 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.6-os] - 2026-10-01
+
+### Added
+
+- **图文书源过滤（scripts/filters/ebook_source_filter.py）**：MinerU 图文书的每张插图会插入三段块（`## 插图笔记：<64位哈希>` / `## 图片内容（OCR）` / `## GLM 画面理解`），会破坏门禁——实测一本图文书：全文 3210 个"必须保留的关键点"里 2946 个来自图片块（哈希与 OCR 碎片），笔记永远对不上；膨胀率分母也被撑大（真实 96% 被读成 31%，误判"压缩"）。本过滤器剔除哈希标题与乱 OCR、**保留 GLM 画面理解**（书里图上印的知识文字在其中），生成干净对账基准；原始 full_embedded.md 不动，全量留档溯源。
+  CLI：`python -m scripts.filters.ebook_source_filter --src <full_embedded.md> --out <clean_only.md> --keep-glm`
+- **文档同步**：`docs/orchestration-manual.md` 第 0 步覆盖两类源（文字型 PDF / 图文书）；`docs/capability-functions.md` 与 `docs/user-guide.md` 更新到五指标门禁；`docs/prompt-family-p1-p5.md` 版本标签对齐；README（英/中）补源前置过滤特性条目。
+
+### Security
+
+- Maintained: API keys via env vars; no new dependencies.
+
 ## [0.4.5-os] - 2026-09-22
 
 ### Added

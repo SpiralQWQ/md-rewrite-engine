@@ -52,6 +52,13 @@ quality without evidence. This project makes quality **measurable and enforced**
 - **Long-document discipline** — concept map first; every block carries the global
   map, previous-block summary, next-block preview, and block overlap.
 
+- **Source pre-filter** — `scripts/filters/` cleans the reconciliation baseline
+  before the gate runs: `ocr_source_filter` strips hash / timestamp / client-echo
+  debris from text-PDF sources; `ebook_source_filter --keep-glm` strips illustration
+  blocks (64-char hashes + scrambled OCR) from MinerU graphic-ebook output while
+  keeping the GLM picture descriptions that carry on-image teaching text. The raw
+  source is always kept in full for traceability.
+
 ## Quick start
 
 ```bash
