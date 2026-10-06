@@ -5,6 +5,25 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.7-os] - 2026-10-05
+
+### Added
+
+- **课程名显式覆盖 + 章节自然排序**（原 ROADMAP 待办项）：`build_course_index(course_dir, output_path, course_name="")` 支持显式传课程名（空则仍回退目录名）；索引文件按自然序排列——第 10 章排在第 2 章之后，不再按字典序（`_natural_chapter_key`）。
+- **索引摘要清洗**：`- [标题](#锚点)` 目录链接行不再被当成一句话摘要；摘要自动剥掉 `> 一句话总结：` 前缀与 `**` 粗体标记。
+- **frontmatter BOM 容错**（`core/md_index.py`）：解析前剥离行首 U+FEFF，带 BOM 写盘的文件不再静默丢失 frontmatter。
+- 测试：新增 `tests/core/test_md_index.py`、`tests/core/test_verify.py` 的 `TestTermVariants`、门禁变体提示的 2 个用例。
+
+### Fixed
+
+- **门禁的术语变体提示恢复**（`scripts/gate_check.py`）：此前修 Python 3.10/3.11 f-string 语法错误时，把 `④ 术语变体` 输出段与 `variants` 字段一并删掉了，导致代码与文档宣称的「五指标门禁」对不上。现已恢复（warning 级，不翻判定），同时保留 3.10/3.11 兼容写法。
+- **删除 `core/verify.py` 中重复定义的 `semantic_reconcile`**：该函数被定义了两遍，Python 静默取后一份。
+- `src/md_rewrite_engine/__init__.py` 的 `__version__` 停在 0.4.3，现与 `pyproject.toml` 对齐。
+
+### Security
+
+- Maintained: API keys via env vars; no new dependencies.
+
 ## [0.4.6-os] - 2026-10-01
 
 ### Added

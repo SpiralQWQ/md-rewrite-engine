@@ -6,6 +6,41 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.7-os] - 2026-10-05
+
+### Added
+
+- **Course-name override + natural chapter sorting** (previously a roadmap
+  item): `build_course_index(course_dir,
+  output_path, course_name="")` accepts an explicit course name instead of
+  always deriving it from the directory name, and the index sorts note files
+  naturally — chapter 10 now comes after chapter 2, not after chapter 1
+  (`_natural_chapter_key`).
+- **Index summary hygiene**: a `- [title](#anchor)` table-of-contents line is no
+  longer mistaken for the one-line summary, and summaries drop the
+  `> 一句话总结：` prefix and `**` bold markers.
+- **BOM-tolerant frontmatter** (`core/md_index.py`): a leading U+FEFF is
+  stripped before parsing, so a file written by a BOM-emitting tool no longer
+  loses its frontmatter silently.
+- Tests: `tests/core/test_md_index.py` (new), `TestTermVariants` in
+  `tests/core/test_verify.py`, and the two variant-reporting gate tests.
+
+### Fixed
+
+- **Term-variant reporting restored in the gate** (`scripts/gate_check.py`): the
+  Python 3.10/3.11 f-string fix had also dropped the `④ 术语变体` report block
+  and the `variants` key, leaving the code out of step with the documented
+  five-metric gate. Reporting is back (warning level — it never flips the
+  verdict), and the f-string stays 3.10/3.11-compatible.
+- **Duplicate `semantic_reconcile` definition** in `core/verify.py` removed —
+  the function was defined twice and Python silently kept the second copy.
+- `__version__` in `src/md_rewrite_engine/__init__.py` was stale at 0.4.3 and now
+  tracks `pyproject.toml`.
+
+### Security
+
+- Maintained: API keys via env vars; no new dependencies.
+
 ## [0.4.6-os] - 2026-10-01
 
 ### Added

@@ -616,31 +616,6 @@ def expansion_verdict(original: str, rewritten: str, threshold: float = 0.80,
     return res
 
 
-def semantic_reconcile(original, rewritten, call=None) -> dict:
-    """语义级对账（B2）：调 LLM 判断"概念是否覆盖"，非词级数关键词。
-
-    core 零依赖铁律：LLM 通过 call 回调注入（services 层绑定 prompt + 模型）。
-    能检出"词级对账漏掉但概念级缺失"的 case（如 STAR法则 被改写为 四段式描述）。
-    LLM 不可用/异常 → 降级返回空缺失（不阻断主流程）。
-
-    Args:
-        original: 原文。
-        rewritten: 重排后。
-        call: 语义对账回调 call(original, rewritten) -> list[str] 缺失概念。
-
-    Returns:
-        {"missing": list, "ok": bool}
-    """
-    if call is None:
-        return {"missing": [], "ok": True}
-    try:
-        missing = call(original, rewritten)
-        missing = [str(x) for x in missing if str(x).strip()] if isinstance(missing, list) else []
-        return {"missing": missing, "ok": not missing}
-    except Exception:  # noqa: BLE001 LLM 失败降级，不阻断
-        return {"missing": [], "ok": True}
-
-
 # ── 阶段 5 · fail-closed 验证门禁（每块独立修补额度）──
 _SCORE_TARGET = 95  # 评分目标线（95+ 可教；80-94 偏浅；<80 不合格）
 

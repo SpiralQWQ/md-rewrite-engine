@@ -82,6 +82,25 @@ class TestToc(unittest.TestCase):
         self.assertEqual(second.count("本篇目录"), 1)
         self.assertTrue(hs)
 
+    def test_build_bom_frontmatter_position(self):
+        text = "﻿---\ntitle: 测试\n---\n\n# 主标题\n\n## 第一节\n\n正文。\n"
+        new, hs = build_toc(text)
+        self.assertIn("## 📑 本篇目录", new)
+        pos_fm = new.index("title:")
+        pos_toc = new.index("本篇目录")
+        self.assertLess(pos_fm, pos_toc, "TOC 被插到 frontmatter 之前（BOM 致错位）")
+
+    def test_build_bom_idempotent(self):
+        text = ("﻿---\ntitle: 测试\n---\n\n# 主标题\n\n## 📑 本篇目录\n\n"
+                "- [第一节](#第一节)\n\n## 第一节\n")
+        new, _ = build_toc(text)
+        self.assertEqual(new.count("本篇目录"), 1)
+
+    def test_parse_frontmatter_end_bom(self):
+        from md_rewrite_engine.core.toc import parse_frontmatter_end
+        text = "﻿---\ntitle: x\n---\n\n正文"
+        self.assertEqual(parse_frontmatter_end(text), 3)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -136,6 +136,7 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
                 "reconcile": {"coverage": 0.0, "ok": False,
                               "missing": [], "warnings": [],
                               "note": f"--src 文件不存在: {src_path}"},
+                "variants": [],
                 "expansion": None,
                 "six_sets": check_six_sets(note),
                 "feynman": check_feynman(note),
@@ -152,7 +153,9 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
     else:
         report["reconcile"] = {"coverage": 1.0, "ok": True, "missing": [], "warnings": [],
                                "note": "无原文基准，机械对账跳过"}
-    # ①+ 丰富度门禁（膨胀率+聚合豁免，v0.4.5 第 5 指标——硬判定进 problems）
+    # ①⁺ 术语变体（错别字机检，warning 级不判 pass——供人工复核，见 verify.term_variants）
+    report["variants"] = V.term_variants(src, note) if src else []
+    # ①⁺⁺ 丰富度门禁（膨胀率+聚合豁免，v0.4.5 第 5 指标——硬判定进 problems）
     if src:
         th_gen, th_dedup = _expansion_thresholds()
         report["expansion"] = V.expansion_verdict(src_raw, note, threshold=th_gen,
@@ -206,6 +209,12 @@ def _fmt(report: dict) -> str:
     fy = report["feynman"]
     fy_desc = '✅ 每点≥2' if fy['ok'] else f"❌ {len(fy['low'])} 个不足"
     lines.append(f"③ 费曼示范: {fy_desc}")
+    vs = report.get("variants", [])
+    if vs:
+        detail = "; ".join(f"「{x['term'][-12:]}」→「{x['variant'][-12:]}」" for x in vs[:3])
+        lines.append(f"⚠️ 术语变体(warning 级,供人工复核): {len(vs)} 条: {detail}")
+    else:
+        lines.append("④ 术语变体: ✅ 无可疑替换")
     exp = report.get("expansion")
     if exp is not None:
         tag = "直过" if not exp["exempt"] else "豁免"

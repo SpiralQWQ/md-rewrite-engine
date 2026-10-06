@@ -21,6 +21,8 @@ _FM_BOUNDARY = re.compile(r"^---\s*$")
 _FM_LINE = re.compile(r"^([A-Za-z_][\w]*)\s*:\s*(.+?)\s*$")
 # 任意级 Markdown 标题
 _HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$")
+# 目录链接行（- [标题](#锚点) / * [标题](#锚点)）：取摘要时跳过，避免把目录项当一句话总结
+_TOC_LINK = re.compile(r"^[-*]\s+\[.+\]\(#.+\)")
 
 
 def parse_frontmatter(text: str) -> dict:
@@ -31,6 +33,7 @@ def parse_frontmatter(text: str) -> dict:
     """
     if not text:
         return {}
+    text = text.lstrip("﻿")   # 剥 BOM：写盘带 BOM 时首行 `---` 匹配失败会整块解析不到
     lines = text.splitlines()
     if not lines or not _FM_BOUNDARY.match(lines[0].strip()):
         return {}
@@ -54,6 +57,7 @@ def _skip_frontmatter(text: str) -> str:
     """去掉开头的 frontmatter 块，返回正文。"""
     if not text:
         return ""
+    text = text.lstrip("﻿")   # 同 parse_frontmatter：BOM 不剥则 frontmatter 被当正文原样留下
     lines = text.splitlines()
     if lines and _FM_BOUNDARY.match(lines[0].strip()):
         for i in range(1, len(lines)):
@@ -81,6 +85,8 @@ def summary_line(text: str) -> str:
     for ln in body.splitlines():
         s = ln.strip()
         if not s or _HEADING.match(s) or s in ("---", ">"):
+            continue
+        if _TOC_LINK.match(s):     # 篇内目录的链接行不是摘要
             continue
         return s[:_MAX_SUMMARY]
     return ""

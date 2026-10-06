@@ -115,6 +115,50 @@ class TestRun(unittest.TestCase):
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_variants_warning_not_blocking(self):
+        # 术语变体是 warning 级：有变体不翻 PASS 判定（Task-06）
+        # 构造贴近真实：笔记保留源措辞、仅 1 字之差（调度器→掉度器）
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            sp = os.path.join(d, "s.md")
+            np = os.path.join(d, "n.md")
+            src = ("这是一段讲解调度器原理的教程文本。\n"
+                   "调度器负责请求的排队，队列容量 100，超时 200 毫秒。\n")
+            note = ("# 标题\n\n## 第一节\n\n"
+                    "这是一段讲解掉度器原理的教程文本。\n"
+                    "调度器负责请求的排队，队列容量 100，超时 200 毫秒。\n"
+                    "- **定义**：x\n- **通俗类比**：x\n- **原理**：x\n"
+                    "- **示例**：x\n- **为什么重要**：x\n- **易错点**：x\n"
+                    "①（复述）a\n②（应用）b\n")
+            open(sp, "w", encoding="utf-8").write(src)
+            open(np, "w", encoding="utf-8").write(note)
+            rr = run(np, sp)
+            self.assertTrue(rr["pass"], f"变体不应翻判定: {rr['problems']}")
+            self.assertGreaterEqual(len(rr["variants"]), 1)
+            self.assertEqual(rr["variants"][0]["distance"], 1)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_variants_absent_when_clean(self):
+        # 原样保留（无变体）→ variants 空
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            sp = os.path.join(d, "s.md")
+            np = os.path.join(d, "n.md")
+            src = "这是一段讲解调度器原理的教程文本。"
+            note = ("# 标题\n\n## 第一节\n\n调度器原理讲解。\n"
+                    "- **定义**：x\n- **通俗类比**：x\n- **原理**：x\n"
+                    "- **示例**：x\n- **为什么重要**：x\n- **易错点**：x\n"
+                    "①（复述）a\n②（应用）b\n")
+            open(sp, "w", encoding="utf-8").write(src)
+            open(np, "w", encoding="utf-8").write(note)
+            rr = run(np, sp)
+            self.assertEqual(rr["variants"], [])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_expansion_none_without_src(self):
         # 无原文基准 → expansion=None，不进 problems
         import tempfile, shutil

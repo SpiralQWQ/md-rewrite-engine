@@ -62,8 +62,8 @@ quality without evidence. This project makes quality **measurable and enforced**
 ## Quick start
 
 ```bash
-# 1. install
-pip install -r requirements.txt
+# 1. install — `-e .` is what puts the package (and `python -m md_rewrite_engine`) on the path
+pip install -e .
 
 # 2. configure (copy .env.example to .env, fill your key)
 GLM_API_KEY=your-zhipu-key
@@ -82,6 +82,9 @@ python -m md_rewrite_engine --search keyword --input course_dir
 > conversation and follow the 10-step orchestration in
 > `docs/orchestration-manual.md`; scripts do the machine work (check / score /
 > reconcile / write). See `docs/user-guide.md`.
+>
+> **Many chapters?** Switch to the "lead + one subagent per chapter" mode —
+> see `docs/agent-dispatch-spec.md`.
 
 ## Executor configuration
 
@@ -140,7 +143,8 @@ python -m scripts.gate_check note.md --src source.md   # gate check (PASS/FAIL +
 | Doc | Content |
 |---|---|
 | `docs/user-guide.md` | how to run / configure / switch executors / resume across sessions |
-| `docs/orchestration-manual.md` | 10-step in-conversation orchestration |
+| `docs/orchestration-manual.md` | 10-step in-conversation orchestration (the lead rewrites every block itself) |
+| `docs/agent-dispatch-spec.md` | **Dispatching chapters to subagents** (batch mode: dispatch checklist / source-damage catalogue / self-added-content discipline / lead-side acceptance / independent review) |
 | `docs/capability-functions.md` | capability function catalogue |
 | `docs/prompt-family-p1-p5.md` | P1–P5 prompt family |
 | `docs/directory-contract.md` | layering contract |

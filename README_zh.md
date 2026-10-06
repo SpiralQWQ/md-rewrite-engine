@@ -39,8 +39,8 @@
 ## 快速开始
 
 ```bash
-# 1. 装依赖
-pip install -r requirements.txt
+# 1. 装依赖 —— 必须用 `-e .`，包才会被装上，`python -m md_rewrite_engine` 才找得到
+pip install -e .
 
 # 2. 配密钥（复制 .env.example 为 .env 并填入）
 GLM_API_KEY=你的智谱key
@@ -56,6 +56,7 @@ python -m md_rewrite_engine --search 关键词 --input 课程目录  # 词法检
 ```
 
 > **推荐用法（本体主控）**：把转写丢给 Claude 对话，按 `docs/orchestration-manual.md` 10 步亲自编排，脚本只调机器活（质检/评分/对账/输出）。见 `docs/user-guide.md`。
+> **章节多、体量大时**：改用「主控当组长 + 子 agent 干单章」模式——见 `docs/agent-dispatch-spec.md`。
 
 ## 执行者配置
 
@@ -107,7 +108,8 @@ python -m scripts.gate_check 笔记.md --src 原文.md   # 门禁一键检查（
 | 文档 | 内容 |
 |---|---|
 | `docs/user-guide.md` | 怎么跑 / 配执行者 / 换执行者 / 换会话复用 |
-| `docs/orchestration-manual.md` | 本体主控 10 步编排流程 |
+| `docs/orchestration-manual.md` | 本体主控 10 步编排流程（本体**亲自**逐块重排） |
+| `docs/agent-dispatch-spec.md` | **子 agent 派活规范**（批量转写：派活十要素 / 源文破坏形态清单 / 自加内容纪律 / 组长验收清单 / 独立复审） |
 | `docs/capability-functions.md` | 能力函数清单（脚本 = 工具库） |
 | `docs/prompt-family-p1-p5.md` | P1-P5 提示词家族（详细度/结构/检查写死） |
 | `docs/directory-contract.md` | 分层契约 |

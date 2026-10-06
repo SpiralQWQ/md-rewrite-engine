@@ -7,8 +7,8 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from md_rewrite_engine.core.verify import (check, extract_keypoints, extract_links, find_missing_source,  # noqa: E402
-                         reconcile, score, validate_confidence, validate_frontmatter_schema,
-                         validate_links, validate_relations)
+                         reconcile, score, term_variants, validate_confidence,
+                         validate_frontmatter_schema, validate_links, validate_relations)
 
 
 class TestVerify(unittest.TestCase):
@@ -238,6 +238,62 @@ class TestSchema(unittest.TestCase):
 
     def test_none_input(self):
         self.assertFalse(validate_frontmatter_schema(None, ["title"])["ok"])
+
+
+class TestTermVariants(unittest.TestCase):
+    """中文术语近形变体检测（错别字机检，Task-05）。"""
+
+    def test_typo_detected(self):
+        # 经典错字：调度器→掉度器（dist=1）
+        r = term_variants("Scrapy 的调度器管理请求队列", "Scrapy 的掉度器管理请求队列")
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["distance"], 1)
+        self.assertIn("调度器", r[0]["term"])
+        self.assertIn("掉度器", r[0]["variant"])
+
+    def test_normal_rewrite_not_flagged(self):
+        # 正常同义改写（大范围重组）不误报
+        r = term_variants("调度器管理请求队列", "调度器负责请求的排队与调度")
+        self.assertEqual(r, [])
+
+    def test_kept_terms_not_flagged(self):
+        # 原样保留的术语不报
+        r = term_variants("用调度器干活", "调度器很能干")
+        self.assertEqual(r, [])
+
+    def test_empty_and_none(self):
+        self.assertEqual(term_variants("", "x"), [])
+        self.assertEqual(term_variants("x", ""), [])
+        self.assertEqual(term_variants(None, None), [])
+
+    def test_english_only(self):
+        self.assertEqual(term_variants("scrapy spider selector", "scrapy spider selector"), [])
+
+    def test_unrelated_not_flagged(self):
+        # 完全不同的两段中文（距离比 >0.3）不报
+        r = term_variants("苹果香蕉橘子同时出现", "猫狗兔子一起出现")
+        self.assertEqual(r, [])
+
+    def test_two_typos(self):
+        r = term_variants("调度器和下载器协同工作", "掉度器和下载器协同工作")
+        self.assertEqual(len(r), 1)
+
+    def test_two_char_words_not_flagged(self):
+        # 2 字段等长替换不报（常用词互转太泛：通常→通过、首先→要先，实测全是改写）
+        # 构造：两侧各只含 2 字中文词（英文标点隔离，无 ≥3 字段）
+        r = term_variants("通常 abc 在第 xyz 首先", "通过 abc 在第 xyz 首先")
+        self.assertEqual(r, [])
+
+    def test_virtual_word_insertion_not_flagged(self):
+        # 虚词增删（不等长）放过：合法改写的主要形态
+        r = term_variants("从页面中提取数据是核心", "从页面提取数据是核心")
+        self.assertEqual(r, [])
+
+    def test_cap_10(self):
+        # 大量错段 → 截断 ≤10
+        src = " ".join(f"术语甲{i}号描述" for i in range(15))
+        dst = " ".join(f"术语乙{i}号描述" for i in range(15))
+        self.assertLessEqual(len(term_variants(src, dst)), 10)
 
 
 if __name__ == "__main__":

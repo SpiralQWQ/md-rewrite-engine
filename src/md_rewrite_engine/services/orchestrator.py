@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 import time
 
@@ -285,7 +286,7 @@ def _process_run(md_path, output_path, spec, glossary, max_chars,
     }
 
 
-def build_course_index(course_dir: str, output_path: str = "") -> dict:
+def build_course_index(course_dir: str, output_path: str = "", course_name: str = "") -> dict:
     """扫描课程目录 → 生成总索引 index.md（D1 知识点地图）。
 
     编排：读文件(providers) → 元数据提取(core/md_index 纯函数) → 渲染 → 原子写。
@@ -295,18 +296,31 @@ def build_course_index(course_dir: str, output_path: str = "") -> dict:
         course_dir: 课程笔记目录（含多篇笔记 md）。
         output_path: 输出 index.md 路径；空默认写 course_dir/index.md。
             ⚠️ 建议用 index.md 标准名——扫描会排除任意层级的 index.md 防自扫。
+        course_name: 显式课程名；空则回退用目录名。
 
     Returns:
         {"ok", "notes", "index_path", "output", "error"?}
     """
     try:
-        return _build_index_run(course_dir, output_path)
+        return _build_index_run(course_dir, output_path, course_name)
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": f"索引生成异常: {e}", "notes": 0,
                 "index_path": output_path, "output": ""}
 
 
-def _build_index_run(course_dir: str, output_path: str) -> dict:
+def _natural_chapter_key(path: str) -> tuple:
+    """章节文件名自然排序键：章节 10 排在章节 2 之后（非字典序）。
+
+    返回 (组号, 数字列表, 文件名)：带数字的按数值比较且排前，无数字的按名比较排后。
+    """
+    name = os.path.basename(path)
+    nums = re.findall(r"\d+", name)
+    if nums:
+        return (0, [int(n) for n in nums], name)
+    return (1, [], name)
+
+
+def _build_index_run(course_dir: str, output_path: str, course_name: str = "") -> dict:
     """build_course_index 实际执行体（异常由外层统一转 dict）。"""
     if not course_dir or not isinstance(course_dir, str) or not os.path.isdir(course_dir):
         return {"ok": False, "error": f"课程目录不存在: {course_dir}", "notes": 0,
@@ -316,22 +330,27 @@ def _build_index_run(course_dir: str, output_path: str) -> dict:
     files = [p for p in scan_md_dir(course_dir)
              if os.path.abspath(p) != out_abs               # 防索引自扫（自定义输出到子目录也会被递归扫回）
              and os.path.basename(p).lower() != "index.md"]
+    files.sort(key=_natural_chapter_key)                   # 讲次自然序（第 2 章 < 第 10 章）
     notes = []
     for p in files:
         text = read_md(p)
         if not text or not text.strip():
             continue
         fm = MI.parse_frontmatter(text)
+        raw_summary = fm.get("description", "") or MI.summary_line(text)
+        summary = re.sub(r"^>\s*一句话总结[：:]\s*", "", raw_summary or "")  # 剥引用式"一句话总结："前缀
+        summary = summary.replace("**", "").strip()                          # 剥粗体标记
         notes.append({
             "file": os.path.basename(p),
             "title": fm.get("title") or MI.first_heading(text) or os.path.basename(p),
-            "summary": fm.get("description", "") or MI.summary_line(text),
+            "summary": summary,
             "tags": fm.get("tags", []),
         })
     if not notes:
         return {"ok": False, "error": "目录下无有效笔记 md", "notes": 0,
                 "index_path": output_path, "output": ""}
-    course_name = os.path.basename(os.path.normpath(course_dir))
+    if not course_name:
+        course_name = os.path.basename(os.path.normpath(course_dir))
     index_text = MI.build_index(course_name, notes)
     out = output_path or os.path.join(course_dir, "index.md")
     write_md(out, index_text)
