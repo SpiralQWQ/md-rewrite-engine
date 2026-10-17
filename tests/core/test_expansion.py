@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 
 from md_rewrite_engine.core.verify import (  # noqa: E402
     expansion_ratio, expansion_verdict, _content_len, _structured_carry,
-    _kp_cover, _src_sections, _unit_ratios,
+    _kp_cover, _src_sections, _src_units, _unit_ratios,
 )
 
 
@@ -81,6 +81,24 @@ class TestSrcSections(unittest.TestCase):
         self.assertEqual(_src_sections(src), 2)
 
 
+class TestSrcUnits(unittest.TestCase):
+    """覆盖条件的分母：只数"够格"的源单元（B-4）。"""
+
+    def test_counts_only_substantive_units(self):
+        src = ("## 1 短\n\n只有一行。\n\n"
+               "## 2 长\n\n" + "实质内容" * 30 + "\n\n"
+               "## 3 短\n\n也是标题残段\n")
+        self.assertEqual([n for n, _ in _src_units(src)], [2])
+
+    def test_threshold_is_adjustable(self):
+        src = "## 1，题A\n一行。\n"
+        self.assertEqual(_src_units(src), [])
+        self.assertEqual(len(_src_units(src, min_chars=1)), 1)
+
+    def test_none(self):
+        self.assertEqual(_src_units(None), [])
+
+
 class TestUnitRatios(unittest.TestCase):
     def test_paired_units(self):
         src = "## 1，题A\n" + "内容" * 50 + "\n\n## 2，题B\n" + "内容" * 50
@@ -147,6 +165,17 @@ class TestExpansionVerdict(unittest.TestCase):
     def test_none_inputs(self):
         self.assertFalse(expansion_verdict(None, None)["ok"])
         self.assertFalse(expansion_verdict("", "")["ok"])
+
+    def test_coverage_denominator_ignores_stub_sections(self):
+        # B-4 回归：源里大半是只有一行的标题残段时，覆盖条件的分母只该数够格的
+        # 单元（4 个），不是编号小节总数（12 个）——否则照规范写、标题更少的
+        # 笔记会被判"覆盖不足"。
+        src = ("".join(f"## {i}.0 残段\n\n" for i in range(1, 9))
+               + "".join(f"## {i}.1 有料\n\n" + "实质内容" * 25 + "\n\n"
+                         for i in range(1, 5)))
+        v = expansion_verdict(src, "### 1.1 · 有料\n\n内容\n")
+        self.assertEqual(_src_sections(src), 12)
+        self.assertEqual(v["kp_src"], 4)
 
     def test_schema_keys(self):
         src = "源内容" * 100

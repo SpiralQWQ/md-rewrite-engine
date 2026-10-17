@@ -6,7 +6,9 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from md_rewrite_engine.core.toc import build_toc, extract_headings, render_toc  # noqa: E402
+from md_rewrite_engine.core.toc import (  # noqa: E402
+    build_toc, extract_headings, render_toc, strip_toc,
+)
 
 
 class TestToc(unittest.TestCase):
@@ -81,6 +83,36 @@ class TestToc(unittest.TestCase):
         second, hs = build_toc(first)
         self.assertEqual(second.count("本篇目录"), 1)
         self.assertTrue(hs)
+
+    def test_refresh_rebuilds_a_stale_toc(self):
+        # B-5：标题改过之后，默认不刷新会让目录停在旧标题集（锚点全部失效），
+        # refresh=True 才把目录换成按当前标题算出来的。
+        first, _ = build_toc(self.SAMPLE)
+        changed = first.replace("## 第二节", "## 第二节（改名）")
+        stale, _ = build_toc(changed)
+        self.assertIn("- [第二节](#第二节)", stale)
+        self.assertNotIn("- [第二节（改名）]", stale)
+
+        fresh, hs = build_toc(changed, refresh=True)
+        self.assertEqual(fresh.count("本篇目录"), 1)
+        self.assertIn("- [第二节（改名）](#第二节改名)", fresh)
+        self.assertNotIn("- [第二节](#第二节)", fresh)
+        self.assertEqual(hs[0], (2, "第一节"))
+
+    def test_refresh_is_idempotent(self):
+        once, _ = build_toc(self.SAMPLE, refresh=True)
+        twice, _ = build_toc(once, refresh=True)
+        self.assertEqual(once, twice)
+        self.assertEqual(twice.count("本篇目录"), 1)
+
+    def test_strip_toc_stops_before_following_content(self):
+        # 目录块紧跟引言 blockquote：剥目录只许剥目录，别把引言一起吃掉
+        md = ("# 主\n\n## 📑 本篇目录\n\n- [第一节](#第一节)\n\n---\n\n"
+              "> 引言：别删我。\n\n## 第一节\n")
+        out = strip_toc(md)
+        self.assertNotIn("本篇目录", out)
+        self.assertIn("> 引言：别删我。", out)
+        self.assertIn("## 第一节", out)
 
     def test_build_bom_frontmatter_position(self):
         text = "﻿---\ntitle: 测试\n---\n\n# 主标题\n\n## 第一节\n\n正文。\n"

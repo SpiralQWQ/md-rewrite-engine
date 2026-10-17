@@ -5,6 +5,23 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.4.8-os] - 2026-10-17
+
+### Added
+
+- 新增 `tests/scripts/test_toc_gen.py`：以子进程方式跑 `scripts/toc_gen.py`，清空 `PYTHONPATH`、切换 cwd——「脚本自己就能跑」从此是被锁住的性质，而不是假设。
+
+### Fixed
+
+- **门禁不再把空集判成通过**（`scripts/gate_check.py`）：切不到 `### 知识点 N.M · 标题` 形状的小节时，`check_six_sets` / `check_feynman` 原本返回 `ok: True`，报告照样打印 `② 6 件套: ✅ 全部完整` / `③ 费曼示范: ✅ 每点≥2`。形状已偏离规范的笔记因此被五项指标里的两项一路放行。现在两项都判 FAIL，并写明原因。
+- **覆盖条件与逐单元条件用的不是同一把尺**（`core/verify.py`）：豁免的覆盖分母把**每一个**编号小节都算了进去，包括只有几行的标题残段。于是**越照规范写、分越低**——同一份内容只改形状实测：旧形状 `34/42 = 81%` PASS → 规范形状 `27/42 = 64%` FAIL。分母改用 `_src_units()`（与 `_unit_ratios` 同一正则、同一 `> 50 字符` 门槛、同一「到下一个编号标题为止」的切法）；分子未动，源里没有编号小节时仍回退旧口径。
+- **`toc_gen.py --apply` 改为重建已有目录，而不是跳过**（`core/toc.py`、`scripts/toc_gen.py`）：旧行为「已存在 → 幂等跳过」会让目录停在旧标题集、锚点指向已不存在的标题，工具却报成功。`build_toc(text, refresh=True)` 先摘旧块再重建；`refresh=False` 保持旧的幂等语义（标题没变时刷新等于不写）。
+- **`scripts/toc_gen.py` 按它自己文档里写的方式跑不起来**：它只把 `<repo>` 挂进 `sys.path`，而包在 `<repo>/src/` 下，于是 `python scripts/toc_gen.py <笔记.md> --apply` 会 `ModuleNotFoundError`，除非调用方额外给 `PYTHONPATH`。现在同时挂 `<repo>/src`。
+
+### Changed
+
+- 上述修复配套的测试：`tests/scripts/test_gate_check.py`（空集用例）、`tests/core/test_expansion.py`（`TestSrcUnits`、标题残段分母）、`tests/core/test_toc.py`（刷新 / 剥离）。
+
 ## [0.4.7-os] - 2026-10-05
 
 ### Added

@@ -90,9 +90,23 @@ def _has_six_set(body: str, s: str) -> bool:
     return bool(re.search(rf"- \*\*{s}\*\*", body))
 
 
+_KP_HEADING = (r"(### 知识点 ([0-9.]+) · [^\n]+\n)(.*?)"
+               r"(?=\n### 知识点|\n# 第|\n## 块|\n## 📖|\n## ❓|\n## 📌|\Z)")
+
+
+def _knowledge_points(note_text: str) -> list:
+    """切出规范形状的知识点小节。切不到 = 空集，调用方必须判 FAIL。"""
+    return list(re.finditer(_KP_HEADING, note_text, re.S))
+
+
 def check_six_sets(note_text: str) -> dict:
-    """逐知识点查 6 件套（命令块算示例）。返回 {ok, missing: [{kp, miss}]}。"""
-    kps = list(re.finditer(r"(### 知识点 ([0-9.]+) · [^\n]+\n)(.*?)(?=\n### 知识点|\n# 第|\n## 块|\n## 📖|\n## ❓|\n## 📌|\Z)", note_text, re.S))
+    """逐知识点查 6 件套（命令块算示例）。返回 {ok, missing: [{kp, miss}], reason}。"""
+    kps = _knowledge_points(note_text)
+    if not kps:
+        # 空集不等于没问题：切不到知识点就无从校验，照旧报"✅ 全部完整"会让
+        # 偏离规范的笔记一路放行（编排层实测踩过，见 docs/回灌清单.md B-1）。
+        return {"ok": False, "missing": [],
+                "reason": "切不到知识点小节，无法校验 6 件套（形状须是 `### 知识点 N.M · 标题`）"}
     missing = []
     for m in kps:
         body = m.group(3)
@@ -109,7 +123,10 @@ _FEYNMAN_MARK = re.compile(r"[①②③④⑤]")
 
 def check_feynman(note_text: str) -> dict:
     """每知识点统计示范角度个数（①/②/③/④ 或 复述/类比/应用/挑错），≥2 达标。"""
-    kps = list(re.finditer(r"(### 知识点 ([0-9.]+) · [^\n]+\n)(.*?)(?=\n### 知识点|\n# 第|\n## 块|\n## 📖|\n## ❓|\n## 📌|\Z)", note_text, re.S))
+    kps = _knowledge_points(note_text)
+    if not kps:
+        return {"ok": False, "low": [],
+                "reason": "切不到知识点小节，无法校验费曼示范（形状须是 `### 知识点 N.M · 标题`）"}
     low = []
     for m in kps:
         body = m.group(3)
@@ -183,9 +200,11 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
     if not report["reconcile"]["ok"]:
         problems.append(f"机械对账 {report['reconcile']['coverage']:.0%} < 90%（缺 {report['reconcile']['missing']}）")
     if not s6["ok"]:
-        problems.append(f"6 件套不全 {len(s6['missing'])} 个知识点")
+        problems.append(s6.get("reason")
+                        or f"6 件套不全 {len(s6['missing'])} 个知识点")
     if not fy["ok"]:
-        problems.append(f"费曼示范不足 {len(fy['low'])} 个知识点")
+        problems.append(fy.get("reason")
+                        or f"费曼示范不足 {len(fy['low'])} 个知识点")
     exp = report.get("expansion")
     if exp is not None and not exp["ok"]:
         problems.append(f"丰富度不达标（膨胀率 {exp['ratio']:.0%}）：{exp['reason']}")
@@ -203,11 +222,18 @@ def _fmt(report: dict) -> str:
     s6 = report["six_sets"]
     s6_desc = "✅ 全部完整"
     if not s6["ok"]:
-        detail = "; ".join(f"{x['kp']}缺{'/'.join(x['miss'])}" for x in s6["missing"][:5])
-        s6_desc = f"❌ {len(s6['missing'])} 个知识点不全: {detail}"
+        if s6.get("reason"):
+            s6_desc = f"❌ {s6['reason']}"
+        else:
+            detail = "; ".join(f"{x['kp']}缺{'/'.join(x['miss'])}" for x in s6["missing"][:5])
+            s6_desc = f"❌ {len(s6['missing'])} 个知识点不全: {detail}"
     lines.append(f"② 6 件套: {s6_desc}")
     fy = report["feynman"]
-    fy_desc = '✅ 每点≥2' if fy['ok'] else f"❌ {len(fy['low'])} 个不足"
+    if fy["ok"]:
+        fy_desc = '✅ 每点≥2'
+    else:
+        fy_desc = (f"❌ {fy['reason']}" if fy.get("reason")
+                   else f"❌ {len(fy['low'])} 个不足")
     lines.append(f"③ 费曼示范: {fy_desc}")
     vs = report.get("variants", [])
     if vs:

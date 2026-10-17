@@ -6,6 +6,47 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.8-os] - 2026-10-17
+
+### Added
+
+- `tests/scripts/test_toc_gen.py` — runs `scripts/toc_gen.py` as a subprocess with
+  a cleared `PYTHONPATH` and a changed cwd, so "the script works on its own" is a
+  locked property rather than an assumption.
+
+### Fixed
+
+- **The gate no longer passes an empty set** (`scripts/gate_check.py`):
+  `check_six_sets` / `check_feynman` returned `ok: True` when no
+  `### 知识点 N.M · <title>` section matched, and the report still printed
+  `② 6 件套: ✅ 全部完整` / `③ 费曼示范: ✅ 每点≥2`. A note whose shape had drifted
+  off-spec was therefore waved through by two of the five indicators. Both now
+  FAIL and state the reason.
+- **The coverage condition measured with a different ruler than the per-unit
+  condition** (`core/verify.py`): the exemption's coverage denominator counted
+  *every* numbered source section, stub headings included. Writing to the spec
+  therefore scored *lower* — measured on one unchanged note: old shape
+  `34/42 = 81%` PASS → spec shape `27/42 = 64%` FAIL. The denominator now uses
+  `_src_units()` (same regex, same `> 50 chars` floor and same slicing as
+  `_unit_ratios`); the numerator is untouched, and a source with no numbered
+  section still falls back to the old count.
+- **`toc_gen.py --apply` rebuilds an existing TOC instead of skipping it**
+  (`core/toc.py`, `scripts/toc_gen.py`): "already present → idempotent skip" left
+  the TOC on a stale heading set, its anchors pointing at headings that no longer
+  exist, while reporting success. `build_toc(text, refresh=True)` now strips the
+  old block and rebuilds; `refresh=False` keeps the previous semantics, so a
+  refresh with unchanged headings still writes nothing.
+- **`scripts/toc_gen.py` could not be run the way its own header documents**: it
+  added only `<repo>` to `sys.path`, but the package lives under `<repo>/src/`, so
+  `python scripts/toc_gen.py <note.md> --apply` raised `ModuleNotFoundError`
+  unless the caller supplied `PYTHONPATH`. It now adds `<repo>/src` as well.
+
+### Changed
+
+- Tests accompanying the fixes above: `tests/scripts/test_gate_check.py`
+  (empty-set cases), `tests/core/test_expansion.py` (`TestSrcUnits`,
+  stub-section denominator), `tests/core/test_toc.py` (refresh / strip).
+
 ## [0.4.7-os] - 2026-10-05
 
 ### Added

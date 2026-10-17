@@ -55,8 +55,11 @@ class TestSixSets(unittest.TestCase):
         # 命令块算示例，不应报缺示例
         self.assertNotIn("示例", r["missing"][0]["miss"] if r["missing"] else [])
 
-    def test_no_kp(self):
-        self.assertTrue(check_six_sets("无知识点纯文本")["ok"])
+    def test_no_kp_fails_instead_of_passing_vacuously(self):
+        # 空集不等于没问题：切不到知识点就无从校验，不许报"✅ 全部完整"
+        r = check_six_sets("无知识点纯文本")
+        self.assertFalse(r["ok"])
+        self.assertIn("切不到知识点", r["reason"])
 
 
 class TestFeynman(unittest.TestCase):
@@ -69,6 +72,11 @@ class TestFeynman(unittest.TestCase):
         r = check_feynman(t)
         self.assertFalse(r["ok"])
         self.assertEqual(r["low"][0]["kp"], "1.1")
+
+    def test_no_kp_fails_instead_of_passing_vacuously(self):
+        r = check_feynman("无知识点纯文本")
+        self.assertFalse(r["ok"])
+        self.assertIn("切不到知识点", r["reason"])
 
 
 class TestRun(unittest.TestCase):
@@ -125,7 +133,7 @@ class TestRun(unittest.TestCase):
             np = os.path.join(d, "n.md")
             src = ("这是一段讲解调度器原理的教程文本。\n"
                    "调度器负责请求的排队，队列容量 100，超时 200 毫秒。\n")
-            note = ("# 标题\n\n## 第一节\n\n"
+            note = ("# 标题\n\n### 知识点 1.1 · 调度器\n\n"
                     "这是一段讲解掉度器原理的教程文本。\n"
                     "调度器负责请求的排队，队列容量 100，超时 200 毫秒。\n"
                     "- **定义**：x\n- **通俗类比**：x\n- **原理**：x\n"

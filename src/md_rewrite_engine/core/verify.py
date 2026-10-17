@@ -499,6 +499,30 @@ def _src_sections(src: str) -> int:
     return n if n else len(re.findall(r"^## ", src, re.M))
 
 
+# 源单元的"够格"门槛：内容量低于这个数的编号小节只算标题残段，不构成
+# 待覆盖的教学单元。与 _unit_ratios 用同一个数（它注释里叫"滤标题残段"）。
+_SRC_UNIT_MIN_CHARS = 50
+
+
+def _src_units(src: str, min_chars: int = _SRC_UNIT_MIN_CHARS) -> list:
+    """源里够得上一个教学单元的编号小节：[(编号, 内容量), ...]。
+
+    与 `_unit_ratios` 同一把尺（同一正则、同一门槛、同一"到下一个编号标题为止"
+    的切法）。覆盖条件与逐单元条件必须同尺，否则分子分母各用各的源单元定义，
+    照规范写的笔记会被判成"覆盖不足"——实测同一份内容只改形状：旧形状
+    34/42=81% PASS → 规范形状 27/42=64% FAIL，根因就是分母把 `## 3.1` 这类
+    只有几行的标题残段也当成了待覆盖单元（见 docs/回灌清单.md B-4）。
+    """
+    if not isinstance(src, str):
+        return []
+    hits = list(re.finditer(r"^##\s*(\d+)[.\d]*[ ，,．.、]", src, re.M))
+    units = []
+    for i, m in enumerate(hits):
+        end = hits[i + 1].start() if i + 1 < len(hits) else len(src)
+        units.append((int(m.group(1)), _content_len(src[m.start():end])))
+    return [(num, size) for num, size in units if size > min_chars]
+
+
 def _unit_ratios(original: str, rewritten: str) -> list:
     """逐单元膨胀率：按编号标题把源与笔记切成对应单元，算每单元内容量比。
 
@@ -537,7 +561,9 @@ def expansion_verdict(original: str, rewritten: str, threshold: float = 0.80,
     判定流程（豁免检测方案 v6，2026-09-21 定稿，三区间制）：
       ① 膨胀率 ≥ 0.80 → PASS（丰富度达标）
       ② 0.30 ≤ 膨胀率 < 0.80 → 豁免候选区，**三条件同时满足**才豁免：
-         a. 知识点覆盖：笔记标题结构数 ≥ 源小节数 × 0.8（覆盖不缩水）
+         a. 知识点覆盖：笔记标题结构数 ≥ 够格的源单元数 × 0.8（覆盖不缩水；
+            "够格"= _src_units 的口径，与条件 c 同尺——分母若算上标题残段，
+            照规范写反而被判覆盖不足，见 B-4）
          b. 结构化承载：笔记表格行 + 代码行 ≥ 10 行（聚合的物理形态）
          c. 逐单元膨胀率中位 ≥ 0.40（每个信息单元不能瘦过四成——
             区分"重组"与"压缩"的唯一可靠信号）
@@ -575,7 +601,11 @@ def expansion_verdict(original: str, rewritten: str, threshold: float = 0.80,
     eff = dedup_threshold if dedup else threshold
     ratio = expansion_ratio(original, rewritten)
     note_kp = _kp_cover(rewritten)
-    src_kp = _src_sections(original)
+    # 覆盖条件的分母与逐单元条件同尺：只数"够格"的源单元（_src_units）。
+    # 源里没有编号小节、或编号小节全是标题残段时，退回 _src_sections 的旧口径，
+    # 免得"没有单元可覆盖"被当成"覆盖 0%"误杀。
+    units = _src_units(original)
+    src_kp = len(units) if units else _src_sections(original)
     kp_cover = note_kp / src_kp if src_kp else 1.0
     carry = _structured_carry(rewritten)
     ratios = _unit_ratios(original, rewritten)
