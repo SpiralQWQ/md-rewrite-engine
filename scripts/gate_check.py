@@ -104,7 +104,7 @@ def check_six_sets(note_text: str) -> dict:
     kps = _knowledge_points(note_text)
     if not kps:
         # 空集不等于没问题：切不到知识点就无从校验，照旧报"✅ 全部完整"会让
-        # 偏离规范的笔记一路放行（编排层实测踩过，见 docs/回灌清单.md B-1）。
+        # 形状偏离规范的笔记一路放行（实测踩过）。
         return {"ok": False, "missing": [],
                 "reason": "切不到知识点小节，无法校验 6 件套（形状须是 `### 知识点 N.M · 标题`）"}
     missing = []

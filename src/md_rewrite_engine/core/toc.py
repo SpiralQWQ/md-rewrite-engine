@@ -123,7 +123,7 @@ def build_toc(text: str, refresh: bool = False) -> tuple:
         text: 笔记 md 全文。
         refresh: 已有目录时是否**重建**。默认 False = 原样跳过（保持旧的幂等语义）；
             True 用于"标题改过之后要把目录刷新过来"——旧的"只插不刷新"会让目录
-            停在旧标题集、锚点全部失效，而工具还报"幂等跳过"（回灌清单 B-5）。
+            停在旧标题集、锚点全部失效，而工具还报"幂等跳过"。
 
     Returns:
         (new_text, headings)

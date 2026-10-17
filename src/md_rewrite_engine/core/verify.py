@@ -511,7 +511,7 @@ def _src_units(src: str, min_chars: int = _SRC_UNIT_MIN_CHARS) -> list:
     的切法）。覆盖条件与逐单元条件必须同尺，否则分子分母各用各的源单元定义，
     照规范写的笔记会被判成"覆盖不足"——实测同一份内容只改形状：旧形状
     34/42=81% PASS → 规范形状 27/42=64% FAIL，根因就是分母把 `## 3.1` 这类
-    只有几行的标题残段也当成了待覆盖单元（见 docs/回灌清单.md B-4）。
+    只有几行的标题残段也当成了待覆盖单元。
     """
     if not isinstance(src, str):
         return []
