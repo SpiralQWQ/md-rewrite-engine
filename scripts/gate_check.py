@@ -66,6 +66,52 @@ def _clean_meta(text: str) -> str:
     return text
 
 
+# ── 对账基准：先剔掉「机器可识别的载荷」，只留作者写的正文（2026-10-17 / v0.5.0）──
+# 实测（把 9 份成品笔记的"缺失数字"逐个定位回源文的区域）：缺失里 **图 OCR 块 26 处、
+# 参考文献段 9 处**，合计七成——全是图表刻度、图例文字、卷期页码、报刊版次这类
+# **读者用不上的数字**。把它们算成"必留硬事实"，只会逼写手往笔记里塞数字换覆盖率。
+_REF_HEADING = re.compile(r"^#{1,6}[ \t]*[^\n]*(?:参考文献|References|Bibliography)",
+                          re.IGNORECASE)
+_FIG_HEADING = re.compile(r"^#{1,6}[ \t]*插图笔记")
+_FIG_SUBHEADING = re.compile(r"^#{1,6}[ \t]*(?:图片内容|GLM)")
+_ANY_HEADING = re.compile(r"^#{1,6}[ \t]")
+_URL = re.compile(r"https?://\S+")
+
+
+def strip_nonprose(text: str) -> str:
+    """把「机器可识别的载荷」从对账基准里剔掉，只留作者写的正文。
+
+    剔三类，都不属于"要教给人的数字"：
+      - **插图笔记块**（插图融合的产出：`## 插图笔记` → `## 图片内容（OCR）`
+        → `## GLM 画面理解`）——里面是图表刻度、图例文字与机器读数；
+      - **参考文献段**——卷期、页码、年份、报刊版次；
+      - **URL**——形如 `A.0012.0001` 的文档编号会从链接里被当成数字抽出来。
+
+    只影响 ① 机械对账与 ①⁺ 术语变体；⑤ 丰富度仍用未过滤的 src_raw
+    （它是"源文对笔记"的体量比，剔源文会让比值虚高、把聚合误判成注水）。
+    """
+    kept, drop = [], False
+    for ln in text.splitlines(keepends=True):
+        if _FIG_HEADING.match(ln) or _REF_HEADING.match(ln):
+            drop = True
+            continue
+        if drop:
+            if _FIG_SUBHEADING.match(ln):     # 图 OCR 块内部的子标题，仍在丢弃区
+                continue
+            if _ANY_HEADING.match(ln):        # 遇到别的标题 → 离开丢弃区
+                drop = False
+            else:
+                continue
+        kept.append(ln)
+    # 保留原行尾（只删块、不改别处），URL 替换成空格
+    return _URL.sub(" ", "".join(kept))
+
+
+def _baseline(src_raw: str) -> str:
+    """机械对账的基准 = 剔非正文载荷 → 剥元数据数字。"""
+    return _clean_meta(strip_nonprose(src_raw))
+
+
 def _expansion_thresholds() -> tuple:
     """读 configs/user_prefs.yaml 的 expansion_ratio（general/dedup 阈值），缺失/异常回退 (0.80, 0.65)。"""
     try:
@@ -145,7 +191,7 @@ def run(note_path: str, src_path: str = "", do_score: bool = False) -> dict:
         src_raw = extract_speech(open(src_path, encoding="utf-8").read())
         # _clean_meta 剥「1.1」章节编号会让 _src_sections 编号正则失配、退回数全部 ##，
         # 分母虚增 3~5 倍 -> 覆盖率被腰斩误拦合格章。故丰富度用剥编号前的 src_raw。
-        src = _clean_meta(src_raw)
+        src = _baseline(src_raw)
     elif src_path:
         # fail-closed：用户显式传了 --src 但文件不存在 → 判定 FAIL 并明示原因。
         # （曾为静默跳过报 100%——第1/2章源名错位时 PASS 因此造假，2026-09-20 修复）

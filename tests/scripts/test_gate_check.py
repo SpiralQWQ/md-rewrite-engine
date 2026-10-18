@@ -7,7 +7,44 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from scripts.gate_check import (_clean_meta, check_feynman, check_six_sets,  # noqa: E402
-                                extract_speech, run)
+                                extract_speech, run, strip_nonprose)
+
+
+class TestStripNonprose(unittest.TestCase):
+    """机器可识别的载荷不进对账基准：图 OCR 块 / 参考文献段 / URL。
+
+    实测依据（把 9 份成品笔记的"缺失数字"逐个定位回源文区域）：图 OCR 块 26 处 +
+    参考文献段 9 处，合计占全部缺失的七成。它们算成"必留硬事实"，只会逼写手
+    往笔记里塞读者用不上的数字。
+    """
+
+    def test_drops_a_figure_ocr_block(self):
+        t = ("正文 3000 在这里。\n\n## 插图笔记\n\n## 图片内容（OCR）\n\n"
+             "1000\n800\n600\n\n## GLM 画面理解\n\n这是一张折线图，纵轴到 1000。\n\n"
+             "## 下一节\n\n正文 5000 还在。\n")
+        out = strip_nonprose(t)
+        self.assertNotIn("1000", out)
+        self.assertNotIn("插图笔记", out)
+        self.assertIn("3000", out)      # 块之前的正文留下
+        self.assertIn("5000", out)      # 块之后的正文留下
+        self.assertIn("下一节", out)
+
+    def test_drops_a_reference_section(self):
+        t = ("正文 3000。\n\n## References\n\n[1] X. Journal, 2021(19): 183-185.\n\n"
+             "## 附录\n\n5000 还在。\n")
+        out = strip_nonprose(t)
+        self.assertNotIn("183", out)
+        self.assertIn("3000", out)
+        self.assertIn("5000", out)
+
+    def test_drops_urls(self):
+        out = strip_nonprose("见 http://data.cma.cn/Market/Detail/code/A.0012.0001/type/1.htm 正文 3000")
+        self.assertNotIn("0012", out)
+        self.assertIn("3000", out)
+
+    def test_a_plain_note_is_untouched(self):
+        t = "# 标题\n\n正文 3000，另有 5000。\n"
+        self.assertEqual(strip_nonprose(t), t)
 
 
 class TestCleanMeta(unittest.TestCase):
@@ -96,6 +133,53 @@ class TestRun(unittest.TestCase):
             open(sp, "w", encoding="utf-8").write("测试 3000 内容")
             r = run(np, sp)
             self.assertTrue(r["pass"])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_axis_ticks_in_a_figure_block_are_not_required(self):
+        """图里的刻度不算"必留硬事实"：源文有、笔记没写，不该判缺（B-6）。"""
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            np = os.path.join(d, "n.md")
+            sp = os.path.join(d, "s.md")
+            open(np, "w", encoding="utf-8").write(self._note())
+            open(sp, "w", encoding="utf-8").write(
+                "正文 3000 内容\n\n## 插图笔记\n\n## 图片内容（OCR）\n\n6350\n6250\n6150\n")
+            r = run(np, sp)
+            self.assertEqual(r["reconcile"]["missing"], [])
+            self.assertTrue(r["reconcile"]["ok"])
+            self.assertTrue(r["pass"])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_a_reference_page_number_is_not_required(self):
+        """文献页码同理：清样里的 183-185 不是教学内容（B-6）。"""
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            np = os.path.join(d, "n.md")
+            sp = os.path.join(d, "s.md")
+            open(np, "w", encoding="utf-8").write(self._note())
+            open(sp, "w", encoding="utf-8").write(
+                "正文 3000 内容\n\n## References\n\n[1] X. Journal, 2021(19): 183-185.\n")
+            r = run(np, sp)
+            self.assertEqual(r["reconcile"]["missing"], [])
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_a_body_number_still_required(self):
+        """反向锁：正文里的数字照旧必须保留——别把这条改动读成"数字都不查了"。"""
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            np = os.path.join(d, "n.md")
+            sp = os.path.join(d, "s.md")
+            open(np, "w", encoding="utf-8").write(self._note())
+            open(sp, "w", encoding="utf-8").write("正文 3000 与 7777 两个数字。\n")
+            r = run(np, sp)
+            self.assertIn("7777", r["reconcile"]["missing"])
+            self.assertFalse(r["reconcile"]["ok"])
         finally:
             shutil.rmtree(d, ignore_errors=True)
 

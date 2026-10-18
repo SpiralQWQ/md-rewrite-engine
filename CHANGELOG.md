@@ -6,6 +6,37 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0-os] - 2026-10-17
+
+### Changed
+
+- **The reconciliation baseline now excludes machine-recognised payloads**
+  (`scripts/gate_check.py`): indicator ① required every number in the source to
+  survive into the note, and it counted *everything* — figure axis ticks, legend
+  text, journal volume/page numbers, newspaper edition numbers. Measured across
+  nine finished notes by locating each missing number back to the region it came
+  from: **26 of them live inside illustration-OCR blocks and 9 inside reference
+  sections — 70% of all misses**, none of which is teaching content. The only way
+  for a writer to clear the indicator was to stuff those numbers into the note.
+
+  `strip_nonprose()` now removes three kinds of machine payload before the
+  baseline is extracted: illustration blocks (`## 插图笔记` → `## 图片内容（OCR）`
+  → `## GLM 画面理解`), reference sections, and URLs (whose document codes such
+  as `A.0012.0001` were being read as numbers). Indicator ⑤ (richness) still uses
+  the unfiltered source — it is a size ratio, and filtering the source would
+  inflate it.
+
+  Effect on the nine notes: four went from 82–98% to **100%** coverage; one lost
+  two misses. Two notes with externally-archived tables score *lower* (44→39%,
+  35→31%) because their remaining misses are code/HTML-table payloads, which this
+  change does not cover — and because a smaller denominator lowers the ratio when
+  the misses were already covered. Both were already waived; **no verdict
+  changed**.
+
+  Note the metric's shape: it is `covered / total`, so removing already-covered
+  numbers from the denominator *lowers* the percentage. This changes *what must
+  be preserved*, not how strict the threshold is.
+
 ## [0.4.8-os] - 2026-10-17
 
 ### Added
