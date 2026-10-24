@@ -115,6 +115,40 @@ class TestFeynman(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertIn("切不到知识点", r["reason"])
 
+    def test_circles_outside_the_demo_block_do_not_count(self):
+        # B-9：旧实现数整个知识点正文的圈数字，而「易错点」几乎每点都用 ①②③④ 列举，
+        # 于是整块示范角度被删掉也照样判过。圈数字只有挂在「❓ 示范角度」下面才算。
+        t = ("### 知识点 1.1 · 测试\n"
+             "- **定义**：x\n- **易错点**：① 别这样 ② 别那样 ③ 也别 ④ 更别\n")
+        r = check_feynman(t)
+        self.assertFalse(r["ok"], "易错点里的圈数字不能冒充示范角度")
+        self.assertEqual(r["low"][0]["n"], 0)
+
+    def test_block_stops_at_the_next_six_set_item(self):
+        # 示范角度块到下一个六件套项为止：后面的圈数字不算这个点的。
+        t = ("### 知识点 1.1 · 测试\n"
+             "- **❓ 示范角度**：\n  ① a\n  ② b\n"
+             "- **易错点**：③ 别这样\n")
+        r = check_feynman(t)
+        self.assertTrue(r["ok"])
+        # 同一个知识点 1.2 只有示范角度标签、没有条目 → 仍算不足
+        t2 = t + "### 知识点 1.2 · 另一个\n- **❓ 示范角度**：\n"
+        self.assertFalse(check_feynman(t2)["ok"])
+
+    def test_feynman_label_variant_is_accepted(self):
+        # note_style_spec.yaml 里这一项叫「❓ 费曼思考题」，交付物实际写「❓ 示范角度」。
+        # 两种都得认，否则按规范写的会被误判。
+        for label in ("❓ 示范角度", "❓ 费曼思考题"):
+            t = "### 知识点 1.1 · 测试\n- **%s**：\n  ① a\n  ② b\n" % label
+            self.assertTrue(check_feynman(t)["ok"], label)
+
+    def test_label_mentioned_in_prose_does_not_count(self):
+        # 导语里解释六件套时会提到这个词，那不是示范角度块。
+        t = ("### 知识点 1.1 · 测试\n"
+             "- **怎么读**：第七项是「❓ 示范角度」，只给线索\n"
+             "- **易错点**：① ② ③ ④\n")
+        self.assertFalse(check_feynman(t)["ok"])
+
 
 class TestRun(unittest.TestCase):
     def _note(self, extra=""):
@@ -222,7 +256,10 @@ class TestRun(unittest.TestCase):
                     "调度器负责请求的排队，队列容量 100，超时 200 毫秒。\n"
                     "- **定义**：x\n- **通俗类比**：x\n- **原理**：x\n"
                     "- **示例**：x\n- **为什么重要**：x\n- **易错点**：x\n"
-                    "①（复述）a\n②（应用）b\n")
+                    # 这两个圈数字必须挂在「❓ 示范角度」标签下：check_feynman 只在该块内
+                    # 计数，光秃秃放在知识点末尾会被判"没有示范角度"（B-9）。
+                    "- **❓ 示范角度**：\n"
+                    "  ①（复述）a\n  ②（应用）b\n")
             open(sp, "w", encoding="utf-8").write(src)
             open(np, "w", encoding="utf-8").write(note)
             rr = run(np, sp)

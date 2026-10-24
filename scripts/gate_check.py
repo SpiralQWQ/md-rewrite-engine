@@ -165,19 +165,41 @@ def check_six_sets(note_text: str) -> dict:
 # ── ③ 费曼示范计数 ──
 # 每条示范角度 = 一个圈数字（① ② ③ ④ ⑤）；「（复述/类比...）」是角度注解，不计独立，防双计
 _FEYNMAN_MARK = re.compile(r"[①②③④⑤]")
+# 「❓ 示范角度」的标签行。只认行首——导语里提到这个词的句子不算。
+# 两种叫法都认：交付物实际写的是「示范角度」，note_style_spec.yaml 里写的名字是
+# 「❓ 费曼思考题」。只认一种会让按另一种写法来的笔记被误判。
+_DEMO_LABEL = re.compile(r"^[ \t]*[-*][ \t]*\*\*❓[ \t]*(?:示范角度|费曼)", re.M)
+# 六件套里其它项的行首（`- **定义**：`、`- **易错点**：`…）：示范角度块到这里结束。
+_SIX_ITEM = re.compile(r"^[ \t]*[-*][ \t]*\*\*", re.M)
+
+
+def _demo_block(body: str) -> str:
+    """切出某个知识点正文里的「❓ 示范角度」块；该点没有这个标签则返回空串。"""
+    m = _DEMO_LABEL.search(body)
+    if not m:
+        return ""
+    rest = body[m.end():]
+    nxt = _SIX_ITEM.search(rest)
+    return rest[:nxt.start()] if nxt else rest
 
 
 def check_feynman(note_text: str) -> dict:
-    """每知识点统计示范角度个数（①/②/③/④ 或 复述/类比/应用/挑错），≥2 达标。"""
+    """逐知识点判定：该点要有「❓ 示范角度」块，且块内角度条目数达到配置下限。
+
+    圈数字**只在该点的示范角度块内数**。旧实现数的是整个知识点正文，而「易错点」
+    几乎每点都用 ①②③④ 列举，随便一个知识点就能凑够下限——于是这项检查测的是
+    "有没有列举符号"，不是"有没有示范角度"：整块示范角度被删掉也照样判过
+    （回灌清单 B-9，第 4 章初稿 13 个知识点漏写、零件仍报 ✅）。
+    """
     kps = _knowledge_points(note_text)
     if not kps:
         return {"ok": False, "low": [],
                 "reason": "切不到知识点小节，无法校验费曼示范（形状须是 `### 知识点 N.M · 标题`）"}
+    need = _feynman_min()
     low = []
     for m in kps:
-        body = m.group(3)
-        n = len(_FEYNMAN_MARK.findall(body))
-        if n < _feynman_min():
+        n = len(_FEYNMAN_MARK.findall(_demo_block(m.group(3))))
+        if n < need:
             low.append({"kp": m.group(2), "n": n})
     return {"ok": not low, "low": low}
 
