@@ -62,10 +62,16 @@ def extract_headings(text: str) -> list:
 
 
 def _slug(title: str) -> str:
-    """GitHub 风格锚点：小写、保留中文、空格转 '-'、去标点（容错链接）。"""
+    """GitHub 风格锚点：小写、保留中文、逐个空格转 '-'、去标点（容错链接）。
+
+    必须**逐个**空格替换，不能把连续空白合并成一个 '-'：删掉「知识点 2.1 · 标题」
+    里的 `·` 之后，它两侧各剩一个空格，GitHub 会产出两个连字符（`21--ip`）；
+    合并就会得到 `21-ip`，锚点对不上、目录点不动（回灌清单 B-8，实测 88 个链接全坏）。
+    注意 `\\s` 会把制表符也算进去，GitHub 只认普通空格，所以这里用 `replace` 而不是 `re.sub`。
+    """
     s = title.strip().lower()
     s = re.sub(r"[^\w一-鿿 -]", "", s)
-    s = re.sub(r"\s+", "-", s)
+    s = s.replace(" ", "-")
     return s
 
 

@@ -47,6 +47,21 @@ class TestToc(unittest.TestCase):
         self.assertIn("- [第一节](#第一节)", new)
         self.assertIn("- [知识点 A](#知识点-a)", new)
 
+    def test_anchor_keeps_one_hyphen_per_space(self):
+        """带标点的标题：GitHub 逐空格替换、不合并连续空白。
+
+        「知识点 2.1 · 标题」里 `·` 被删掉后**两侧各剩一个空格**，
+        所以锚点必须有两个连字符。旧的 `re.sub(r"\\s+", "-")` 会合并成一个，
+        导致 8 份笔记的 88 个目录链接全部点不动（回灌清单 B-8）。
+        """
+        toc = render_toc([(2, "知识点 2.1 · IP 地址与子网掩码：网段怎么判断")])
+        self.assertIn("(#知识点-21--ip-地址与子网掩码网段怎么判断)", toc)
+
+    def test_anchor_of_a_plain_title_is_unchanged(self):
+        # 没标点的标题两套规则一致——这条锁住"别为了改 B-8 把普通标题改坏"。
+        toc = render_toc([(2, "知识点 A")])
+        self.assertIn("(#知识点-a)", toc)
+
     def test_build_idempotent(self):
         once, _ = build_toc(self.SAMPLE)
         twice, _ = build_toc(once)
