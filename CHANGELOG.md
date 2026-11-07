@@ -6,6 +6,24 @@ All notable changes to this project are documented here, following
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **`note_style_spec.yaml` · the `info_density.example` guidance was rewritten**
+  from the one-line note into the rule the course actually runs on: numbers split
+  into two kinds (ones the source has - copy verbatim; ones the writer inferred -
+  allowed, but must be declared in the note's metadata block), a worked example,
+  and two disqualifiers (a transcription timecode index is not an example; an
+  example only counts if a reader can follow the arithmetic and land on the
+  source's conclusion).
+
+  Behaviour is unchanged. `yaml.safe_load` strips comments, so no code path reads
+  this text - `services/llm.py` renders the `info_density` *keys*, not their
+  comments. Verified: 250 passed, and the label extracted from `example` is still
+  the same under the `split(":")[0].split("(")[0].split("/")[0]` chain that both
+  the gate and the assignment sheet use.
+
 ## [0.5.0-os] - 2026-10-17
 
 ### Changed

@@ -5,6 +5,21 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 变更
+
+- **`note_style_spec.yaml` · 重写 `info_density.example` 的指引**：从原来一句话
+  扩成这门课实际在用的完整规则——数字分两类（源文有的照抄，一个不许改；演绎假设
+  允许写，但必须在笔记的元信息里登记「此数为演绎假设，源文未给」），附一个可跟着
+  算的完整正例，并给两条判定底线（转写稿的时间轴索引不算示例；示例的唯一终极判据是
+  别人能拿着它把算式走完并说出「所以呢」）。
+
+  行为零变化。`yaml.safe_load` 会剥掉注释，所以没有任何代码路径读这段文字——
+  `services/llm.py` 渲染的是 `info_density` 的**键名**，不是键后面的注释。已实测：
+  250 passed；`example` 提取出的标签在门禁与派活单共用的
+  `split("：")[0].split("（")[0].split("/")[0]` 链条下与改动前一致。
+
 ## [0.5.0-os] - 2026-10-17
 
 ### 变更
