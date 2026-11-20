@@ -8,6 +8,16 @@ All notable changes to this project are documented here, following
 
 ## [Unreleased]
 
+### Fixed
+
+- **Standalone image-link lines no longer pollute the numeric reconciliation
+  baseline** (`scripts/gate_check.py`): `strip_nonprose()` now removes a fourth
+  class of machine payload — a line whose only content is an image reference
+  (`![](images/<sha256>.jpg)`). The file name's hash fragments were read as
+  "source numbers" and could flip a passing reconciliation to a failure
+  (observed: 15 link lines produced 39 spurious keypoints, a note scored 90% → 46%).
+  Inline references (mid-sentence, tables, lists) are untouched.
+
 ### Changed
 
 - **`note_style_spec.yaml` · the `info_density.example` guidance was rewritten**

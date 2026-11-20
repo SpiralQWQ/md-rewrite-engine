@@ -11,11 +11,13 @@ from scripts.gate_check import (_clean_meta, check_feynman, check_six_sets,  # n
 
 
 class TestStripNonprose(unittest.TestCase):
-    """机器可识别的载荷不进对账基准：图 OCR 块 / 参考文献段 / URL。
+    """机器可识别的载荷不进对账基准：图 OCR 块 / 参考文献段 / URL / 独立成行的图片链接。
 
     实测依据（把 9 份成品笔记的"缺失数字"逐个定位回源文区域）：图 OCR 块 26 处 +
     参考文献段 9 处，合计占全部缺失的七成。它们算成"必留硬事实"，只会逼写手
     往笔记里塞读者用不上的数字。
+    图片链接同理：`![](images/<64位sha256>.jpg)` 的文件名会把哈希抽成数字碎片
+    （实测 15 行链接贡献 39 个假关键点，把 90% 的对账打到 46% FAIL）。
     """
 
     def test_drops_a_figure_ocr_block(self):
@@ -41,6 +43,28 @@ class TestStripNonprose(unittest.TestCase):
         out = strip_nonprose("见 http://data.cma.cn/Market/Detail/code/A.0012.0001/type/1.htm 正文 3000")
         self.assertNotIn("0012", out)
         self.assertIn("3000", out)
+
+    def test_drops_a_standalone_image_link_line(self):
+        """整行只有图片链接 → 剔除；哈希碎片不进对账基准。"""
+        t = (
+            "正文第一段，共 3000 人。\n"
+            "![](images/" + "a" * 64 + ".jpg)\n"
+            "正文第二段，比例 95%。\n"
+        )
+        out = strip_nonprose(t)
+        self.assertNotIn("images/", out)       # 链接行没了
+        self.assertIn("3000", out)             # 正文数字保留
+        self.assertIn("95", out)
+
+    def test_keeps_image_links_that_share_a_line_with_text(self):
+        """只有"独占一行"才剔；句中引用与表格单元格里的链接必须保留（否则会漏正文数字）。"""
+        inline = "如图 ![](images/" + "b" * 64 + ".jpg) 所示，样本 3000 张。\n"
+        table = "| ![](images/" + "c" * 64 + ".jpg) | 说明 2000 条 |\n"
+        listed = "- ![](images/" + "d" * 64 + ".jpg)\n"
+        out = strip_nonprose(inline + table + listed)
+        self.assertIn("3000", out)
+        self.assertIn("2000", out)
+        self.assertEqual(out.count("images/"), 3)   # 三处都还在
 
     def test_a_plain_note_is_untouched(self):
         t = "# 标题\n\n正文 3000，另有 5000。\n"

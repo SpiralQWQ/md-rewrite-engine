@@ -76,22 +76,28 @@ _FIG_HEADING = re.compile(r"^#{1,6}[ \t]*插图笔记")
 _FIG_SUBHEADING = re.compile(r"^#{1,6}[ \t]*(?:图片内容|GLM)")
 _ANY_HEADING = re.compile(r"^#{1,6}[ \t]")
 _URL = re.compile(r"https?://\S+")
+_IMG_LINK_LINE = re.compile(r"^[ \t]*!\[[^\]]*\]\([^)\s]*\)[ \t]*$")
 
 
 def strip_nonprose(text: str) -> str:
     """把「机器可识别的载荷」从对账基准里剔掉，只留作者写的正文。
 
-    剔三类，都不属于"要教给人的数字"：
+    剔四类，都不属于"要教给人的数字"：
       - **插图笔记块**（插图融合的产出：`## 插图笔记` → `## 图片内容（OCR）`
         → `## GLM 画面理解`）——里面是图表刻度、图例文字与机器读数；
       - **参考文献段**——卷期、页码、年份、报刊版次；
       - **URL**——形如 `A.0012.0001` 的文档编号会从链接里被当成数字抽出来。
+      - **独立成行的图片链接**——`![](images/<64位sha256>.jpg)` 整行只含文件名，
+        哈希会被抽成数字碎片（实测 15 行链接贡献 39 个假关键点，可把通过的对账判成失败）；
+        只剔独占一行的，句中嵌的图片引用不动。
 
     只影响 ① 机械对账与 ①⁺ 术语变体；⑤ 丰富度仍用未过滤的 src_raw
     （它是"源文对笔记"的体量比，剔源文会让比值虚高、把聚合误判成注水）。
     """
     kept, drop = [], False
     for ln in text.splitlines(keepends=True):
+        if _IMG_LINK_LINE.match(ln.rstrip("\r\n")):
+            continue
         if _FIG_HEADING.match(ln) or _REF_HEADING.match(ln):
             drop = True
             continue
